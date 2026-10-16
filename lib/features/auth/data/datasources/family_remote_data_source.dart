@@ -1,22 +1,26 @@
 import 'dart:math';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../../../core/di/injection_container.dart';
+import '../../../../core/services/session_storage_service.dart';
 import '../models/family_model.dart';
 
 abstract class FamilyRemoteDataSource {
   Future<UserProfileModel?> getMyProfile();
   Future<FamilyModel?> getFamilyById(String familyId);
   Future<FamilyModel?> findFamilyByInviteCode(String inviteCode);
-  Future<void> joinFamily({
-    required String userId,
+  Future<UserProfileModel> joinFamily({
     required String familyId,
+    required String role,
     String? fullName,
-    String? role,
+    String? userId,
   });
   Future<FamilyModel> createFamily({
-    required String userId,
     required String familyName,
     String? fullName,
     String? role,
+    String? userId,
   });
   Future<List<UserProfileModel>> getFamilyMembers(String familyId);
   Future<void> updateRole({required String userId, required String role});
@@ -34,29 +38,69 @@ class FamilyRemoteDataSourceImpl implements FamilyRemoteDataSource {
   FamilyRemoteDataSourceImpl({SupabaseClient? client})
       : _client = client ?? Supabase.instance.client;
 
-  String get _currentUserId => _client.auth.currentUser?.id ?? fallbackUserId;
-
   @override
   Future<UserProfileModel?> getMyProfile() async {
-    final uid = _currentUserId;
+    // 1. Prioritaskan userId yang tersimpan di sesi lokal perangkat
+    final storedUserId = sl<SessionStorageService>().getUserId();
+    if (storedUserId != null && storedUserId.isNotEmpty) {
+      final res = await _client
+          .from('profiles')
+          .select()
+          .eq('id', storedUserId)
+          .maybeSingle();
+
+      if (res != null) {
+        return UserProfileModel.fromJson(res);
+      }
+    }
+
+    // 2. Jika tidak ada di sesi, coba dari Supabase Auth
+    final authUid = _client.auth.currentUser?.id;
+    if (authUid != null) {
+      final res = await _client
+          .from('profiles')
+          .select()
+          .eq('id', authUid)
+          .maybeSingle();
+      if (res != null) {
+        return UserProfileModel.fromJson(res);
+      }
+    }
+
+    // 3. Coba dari kombinasi familyId dan role yang tersimpan di sesi
+    final storedFamilyId = sl<SessionStorageService>().getFamilyId();
+    final storedRole = sl<SessionStorageService>().getRole();
+    if (storedFamilyId != null && storedRole != null) {
+      final res = await _client
+          .from('profiles')
+          .select()
+          .eq('family_id', storedFamilyId)
+          .eq('role', storedRole)
+          .maybeSingle();
+      if (res != null) {
+        final profile = UserProfileModel.fromJson(res);
+        sl<SessionStorageService>().saveSession(
+          userId: profile.id,
+          role: profile.role,
+          fullName: profile.fullName,
+          familyId: profile.familyId,
+        );
+        return profile;
+      }
+    }
+
+    // 4. Fallback ke profil pertama yang ada di database
     final res = await _client
         .from('profiles')
         .select()
-        .eq('id', uid)
+        .eq('id', fallbackUserId)
         .maybeSingle();
 
-    if (res == null) {
-      // Buat profile default jika belum ada
-      final newProfile = UserProfileModel(
-        id: uid,
-        familyId: '00000000-0000-0000-0000-000000000001',
-        fullName: 'Pasutri Homey',
-        role: 'suami',
-      );
-      await _client.from('profiles').upsert(newProfile.toJson());
-      return newProfile;
+    if (res != null) {
+      return UserProfileModel.fromJson(res);
     }
-    return UserProfileModel.fromJson(res);
+
+    return null;
   }
 
   @override
@@ -85,28 +129,65 @@ class FamilyRemoteDataSourceImpl implements FamilyRemoteDataSource {
   }
 
   @override
-  Future<void> joinFamily({
-    required String userId,
+  Future<UserProfileModel> joinFamily({
     required String familyId,
+    required String role,
     String? fullName,
-    String? role,
+    String? userId,
   }) async {
-    final updateData = <String, dynamic>{'family_id': familyId};
-    if (fullName != null && fullName.trim().isNotEmpty) {
-      updateData['full_name'] = fullName.trim();
+    final normalizedRole = role.toLowerCase().trim();
+
+    // 1. Cek apakah di keluarga ini sudah ada profil untuk peran ini
+    final existingRes = await _client
+        .from('profiles')
+        .select()
+        .eq('family_id', familyId)
+        .eq('role', normalizedRole)
+        .maybeSingle();
+
+    if (existingRes != null) {
+      final existingProfile = UserProfileModel.fromJson(existingRes);
+      if (fullName != null && fullName.trim().isNotEmpty) {
+        await _client
+            .from('profiles')
+            .update({'full_name': fullName.trim()})
+            .eq('id', existingProfile.id);
+        return existingProfile.copyWith(fullName: fullName.trim());
+      }
+      return existingProfile;
     }
-    if (role != null) {
-      updateData['role'] = role;
+
+    // 2. Jika belum ada profil peran ini di keluarga tersebut, buat baru
+    String targetId = userId ?? const Uuid().v4();
+    final idTaken = await _client
+        .from('profiles')
+        .select('id')
+        .eq('id', targetId)
+        .maybeSingle();
+
+    if (idTaken != null) {
+      targetId = const Uuid().v4();
     }
-    await _client.from('profiles').update(updateData).eq('id', userId);
+
+    final newProfile = UserProfileModel(
+      id: targetId,
+      familyId: familyId,
+      fullName: (fullName != null && fullName.trim().isNotEmpty)
+          ? fullName.trim()
+          : (normalizedRole == 'suami' ? 'Suami' : 'Istri'),
+      role: normalizedRole,
+    );
+
+    await _client.from('profiles').insert(newProfile.toJson());
+    return newProfile;
   }
 
   @override
   Future<FamilyModel> createFamily({
-    required String userId,
     required String familyName,
     String? fullName,
     String? role,
+    String? userId,
   }) async {
     final randomCode = 'HOMEY-${1000 + Random().nextInt(9000)}';
     final insertRes = await _client
@@ -119,15 +200,38 @@ class FamilyRemoteDataSourceImpl implements FamilyRemoteDataSource {
         .single();
 
     final family = FamilyModel.fromJson(insertRes);
+    final normalizedRole = (role ?? 'suami').toLowerCase().trim();
 
-    final updateData = <String, dynamic>{'family_id': family.id};
-    if (fullName != null && fullName.trim().isNotEmpty) {
-      updateData['full_name'] = fullName.trim();
+    String targetId = userId ?? const Uuid().v4();
+    final idTaken = await _client
+        .from('profiles')
+        .select('id')
+        .eq('id', targetId)
+        .maybeSingle();
+
+    if (idTaken != null) {
+      targetId = const Uuid().v4();
     }
-    if (role != null) {
-      updateData['role'] = role;
-    }
-    await _client.from('profiles').update(updateData).eq('id', userId);
+
+    final newProfile = UserProfileModel(
+      id: targetId,
+      familyId: family.id,
+      fullName: (fullName != null && fullName.trim().isNotEmpty)
+          ? fullName.trim()
+          : (normalizedRole == 'suami' ? 'Suami' : 'Istri'),
+      role: normalizedRole,
+    );
+
+    await _client.from('profiles').insert(newProfile.toJson());
+
+    // Simpan ke sesi lokal
+    sl<SessionStorageService>().saveSession(
+      userId: newProfile.id,
+      role: newProfile.role,
+      fullName: newProfile.fullName,
+      familyId: family.id,
+      familyName: family.name,
+    );
 
     return family;
   }
@@ -137,7 +241,8 @@ class FamilyRemoteDataSourceImpl implements FamilyRemoteDataSource {
     final res = await _client
         .from('profiles')
         .select()
-        .eq('family_id', familyId);
+        .eq('family_id', familyId)
+        .order('role', ascending: false);
 
     return (res as List)
         .map((json) => UserProfileModel.fromJson(json as Map<String, dynamic>))
@@ -169,3 +274,4 @@ class FamilyRemoteDataSourceImpl implements FamilyRemoteDataSource {
     }
   }
 }
+

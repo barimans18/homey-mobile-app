@@ -4,17 +4,17 @@ abstract class FamilyRepository {
   Future<UserProfileEntity?> getMyProfile();
   Future<FamilyEntity?> getFamilyById(String familyId);
   Future<FamilyEntity?> findFamilyByInviteCode(String inviteCode);
-  Future<void> joinFamily({
-    required String userId,
+  Future<UserProfileEntity> joinFamily({
     required String familyId,
+    required String role,
     String? fullName,
-    String? role,
+    String? userId,
   });
   Future<FamilyEntity> createFamily({
-    required String userId,
     required String familyName,
     String? fullName,
     String? role,
+    String? userId,
   });
   Future<List<UserProfileEntity>> getFamilyMembers(String familyId);
   Future<void> updateRole({required String userId, required String role});
@@ -24,3 +24,4 @@ abstract class FamilyRepository {
     String? role,
   });
 }
+

@@ -50,7 +50,18 @@ class _FamilyPairingDialogState extends State<FamilyPairingDialog> {
       );
       return;
     }
-    context.read<FamilyCubit>().joinFamilyByCode(code);
+    final familyState = context.read<FamilyCubit>().state;
+    String? role;
+    String? name;
+    if (familyState is FamilyLoaded) {
+      role = familyState.profile.role;
+      name = familyState.profile.fullName;
+    }
+    context.read<FamilyCubit>().joinFamilyByCode(
+          code,
+          role: role,
+          fullName: name,
+        );
   }
 
   void _onCreatePressed() {
@@ -64,7 +75,18 @@ class _FamilyPairingDialogState extends State<FamilyPairingDialog> {
       );
       return;
     }
-    context.read<FamilyCubit>().createFamily(name);
+    final familyState = context.read<FamilyCubit>().state;
+    String? role;
+    String? fullName;
+    if (familyState is FamilyLoaded) {
+      role = familyState.profile.role;
+      fullName = familyState.profile.fullName;
+    }
+    context.read<FamilyCubit>().createFamily(
+          name,
+          role: role,
+          fullName: fullName,
+        );
   }
 
   @override

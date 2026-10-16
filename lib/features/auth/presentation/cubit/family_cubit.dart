@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/session_storage_service.dart';
+import '../../domain/entities/family_entity.dart';
 import '../../domain/repositories/family_repository.dart';
 import 'family_state.dart';
 
@@ -58,21 +59,21 @@ class FamilyCubit extends Cubit<FamilyState> {
     String? role,
   }) async {
     final currentState = state;
-    emit(FamilyLoading());
+    emit(const FamilyLoading());
 
     try {
-      final profile = await _familyRepository.getMyProfile();
-      if (profile == null) {
-        emit(const FamilyError('Profil pengguna tidak ditemukan'));
-        return;
-      }
-
       final cleanCode = inviteCode.trim().toUpperCase();
       final family = await _familyRepository.findFamilyByInviteCode(cleanCode);
 
       if (family == null) {
+        final profile = await _familyRepository.getMyProfile();
         emit(FamilyLoaded(
-          profile: profile,
+          profile: profile ??
+              UserProfileEntity(
+                id: 'anon',
+                role: role ?? 'istri',
+                fullName: fullName,
+              ),
           family: null,
           members: const [],
           isPairingLoading: false,
@@ -81,27 +82,25 @@ class FamilyCubit extends Cubit<FamilyState> {
         return;
       }
 
-      await _familyRepository.joinFamily(
-        userId: profile.id,
+      final joinedProfile = await _familyRepository.joinFamily(
         familyId: family.id,
+        role: role ?? 'istri',
         fullName: fullName,
-        role: role,
       );
 
-      final updatedProfile = await _familyRepository.getMyProfile();
       final members = await _familyRepository.getFamilyMembers(family.id);
 
       // Simpan ke local storage
       sl<SessionStorageService>().saveSession(
-        userId: (updatedProfile ?? profile).id,
-        role: (updatedProfile ?? profile).role,
-        fullName: (updatedProfile ?? profile).fullName,
+        userId: joinedProfile.id,
+        role: joinedProfile.role,
+        fullName: joinedProfile.fullName,
         familyId: family.id,
         familyName: family.name,
       );
 
       emit(FamilyLoaded(
-        profile: updatedProfile ?? profile,
+        profile: joinedProfile,
         family: family,
         members: members,
         isPairingLoading: false,
@@ -125,36 +124,25 @@ class FamilyCubit extends Cubit<FamilyState> {
     String? role,
   }) async {
     final currentState = state;
-    emit(FamilyLoading());
+    emit(const FamilyLoading());
 
     try {
-      final profile = await _familyRepository.getMyProfile();
-      if (profile == null) {
-        emit(const FamilyError('Profil pengguna tidak ditemukan'));
-        return;
-      }
-
       final newFamily = await _familyRepository.createFamily(
-        userId: profile.id,
         familyName: familyName.trim().isEmpty ? 'Keluarga Kita' : familyName.trim(),
         fullName: fullName,
         role: role,
       );
 
-      final updatedProfile = await _familyRepository.getMyProfile();
+      final profile = await _familyRepository.getMyProfile();
       final members = await _familyRepository.getFamilyMembers(newFamily.id);
 
-      // Simpan ke local storage
-      sl<SessionStorageService>().saveSession(
-        userId: (updatedProfile ?? profile).id,
-        role: (updatedProfile ?? profile).role,
-        fullName: (updatedProfile ?? profile).fullName,
-        familyId: newFamily.id,
-        familyName: newFamily.name,
-      );
-
       emit(FamilyLoaded(
-        profile: updatedProfile ?? profile,
+        profile: profile ??
+            UserProfileEntity(
+              id: 'anon',
+              role: role ?? 'suami',
+              fullName: fullName,
+            ),
         family: newFamily,
         members: members,
         isPairingLoading: false,
@@ -164,7 +152,7 @@ class FamilyCubit extends Cubit<FamilyState> {
       if (currentState is FamilyLoaded) {
         emit(currentState.copyWith(
           isPairingLoading: false,
-          notificationMessage: 'Gagal membuat keluarga: $e',
+          notificationMessage: 'Terjadi kesalahan saat membuat keluarga: $e',
         ));
       } else {
         emit(FamilyError('Gagal membuat keluarga: $e'));

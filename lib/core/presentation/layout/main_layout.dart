@@ -9,6 +9,9 @@ import '../../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../../features/dashboard/presentation/widgets/add_action_bottom_sheet.dart';
 import '../../../features/todo/presentation/pages/agenda_page.dart';
 import '../../../features/todo/presentation/cubit/task_cubit.dart';
+import '../../../features/todo/presentation/widgets/add_task_bottom_sheet.dart';
+import '../../../features/meal_planner/presentation/cubit/meal_plan_cubit.dart';
+import '../../../features/meal_planner/presentation/widgets/add_meal_plan_bottom_sheet.dart';
 import '../../../features/auth/presentation/cubit/family_cubit.dart';
 import '../../../features/auth/presentation/cubit/family_state.dart';
 import '../../../features/auth/presentation/pages/settings_page.dart';
@@ -66,9 +69,21 @@ class _MainLayoutState extends State<MainLayout> {
       },
       onAddTask: () {
         _onTabSelected(1);
+        AddTaskBottomSheet.show(
+          context,
+          familyId: familyId,
+          userId: userId,
+          initialDueDate: DateTime.now(),
+        );
       },
       onAddMeal: () {
         _onTabSelected(1);
+        AddMealPlanBottomSheet.show(
+          context,
+          familyId: familyId,
+          userId: userId,
+          initialDate: DateTime.now(),
+        );
       },
     );
   }
@@ -87,6 +102,10 @@ class _MainLayoutState extends State<MainLayout> {
         BlocProvider(
           create: (_) => sl<TaskCubit>()
             ..watchTasks('00000000-0000-0000-0000-000000000001'),
+        ),
+        BlocProvider(
+          create: (_) => sl<MealPlanCubit>()
+            ..watchFamilyMealPlans('00000000-0000-0000-0000-000000000001'),
         ),
       ],
       child: Builder(
@@ -107,6 +126,7 @@ class _MainLayoutState extends State<MainLayout> {
               if (state is FamilyLoaded && state.family != null) {
                 context.read<FinanceCubit>().watchFamilyTransactions(state.family!.id);
                 context.read<TaskCubit>().watchTasks(state.family!.id);
+                context.read<MealPlanCubit>().watchFamilyMealPlans(state.family!.id);
               }
             },
             child: Scaffold(

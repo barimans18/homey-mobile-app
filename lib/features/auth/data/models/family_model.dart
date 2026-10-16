@@ -47,6 +47,22 @@ class UserProfileModel extends UserProfileEntity {
     );
   }
 
+  UserProfileModel copyWith({
+    String? id,
+    String? familyId,
+    String? fullName,
+    String? role,
+    String? avatarUrl,
+  }) {
+    return UserProfileModel(
+      id: id ?? this.id,
+      familyId: familyId ?? this.familyId,
+      fullName: fullName ?? this.fullName,
+      role: role ?? this.role,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

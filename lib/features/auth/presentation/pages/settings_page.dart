@@ -319,15 +319,35 @@ class SettingsPage extends StatelessWidget {
                         const SizedBox(height: 16),
 
                         // Anggota Keluarga yang Terhubung
-                        const Text(
-                          'Anggota Keluarga:',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
+                        Row(
+                          children: [
+                            const Text(
+                              'Anggota Keluarga Terhubung:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.accentTerracotta.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '${members.length} Orang',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.accentTerracotta,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         if (members.isEmpty)
                           const Text(
                             'Belum ada data anggota lain.',
@@ -335,35 +355,76 @@ class SettingsPage extends StatelessWidget {
                           )
                         else
                           ...members.map(
-                            (m) => Padding(
-                              padding: const EdgeInsets.only(bottom: 6),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    m.role.toLowerCase() == 'suami' ? '👨' : '👩',
-                                    style: const TextStyle(fontSize: 16),
+                            (m) {
+                              final isCurrent = (profile != null && m.id == profile.id) ||
+                                  (profile != null &&
+                                      m.role.toLowerCase() == profile.role.toLowerCase());
+
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isCurrent
+                                      ? AppColors.surface
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isCurrent
+                                        ? AppColors.accentTerracotta.withValues(alpha: 0.4)
+                                        : AppColors.border,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    m.fullName ?? (m.role.toLowerCase() == 'suami' ? 'Suami' : 'Istri'),
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      m.role.toLowerCase() == 'suami' ? '👨' : '👩',
+                                      style: const TextStyle(fontSize: 18),
                                     ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '(${m.role.toUpperCase()})',
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textMuted,
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            m.fullName ?? (m.role.toLowerCase() == 'suami' ? 'Suami' : 'Istri'),
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          Text(
+                                            m.role.toLowerCase() == 'suami' ? 'Suami' : 'Istri',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: AppColors.textMuted,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: isCurrent
+                                            ? AppColors.accentTerracotta
+                                            : AppColors.accentGreen.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        isCurrent ? 'Anda' : 'Pasangan',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: isCurrent ? Colors.white : AppColors.accentGreen,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                         const SizedBox(height: 16),
 

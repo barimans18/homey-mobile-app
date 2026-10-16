@@ -24,32 +24,32 @@ class FamilyRepositoryImpl implements FamilyRepository {
   }
 
   @override
-  Future<void> joinFamily({
-    required String userId,
+  Future<UserProfileEntity> joinFamily({
     required String familyId,
+    required String role,
     String? fullName,
-    String? role,
+    String? userId,
   }) {
     return _remoteDataSource.joinFamily(
-      userId: userId,
       familyId: familyId,
-      fullName: fullName,
       role: role,
+      fullName: fullName,
+      userId: userId,
     );
   }
 
   @override
   Future<FamilyEntity> createFamily({
-    required String userId,
     required String familyName,
     String? fullName,
     String? role,
+    String? userId,
   }) {
     return _remoteDataSource.createFamily(
-      userId: userId,
       familyName: familyName,
       fullName: fullName,
       role: role,
+      userId: userId,
     );
   }
 

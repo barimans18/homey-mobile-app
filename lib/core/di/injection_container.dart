@@ -16,6 +16,10 @@ import '../../features/todo/data/datasources/task_remote_data_source.dart';
 import '../../features/todo/data/repositories/task_repository_impl.dart';
 import '../../features/todo/domain/repositories/task_repository.dart';
 import '../../features/todo/presentation/cubit/task_cubit.dart';
+import '../../features/meal_planner/data/datasources/meal_plan_remote_data_source.dart';
+import '../../features/meal_planner/data/repositories/meal_plan_repository_impl.dart';
+import '../../features/meal_planner/domain/repositories/meal_plan_repository.dart';
+import '../../features/meal_planner/presentation/cubit/meal_plan_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -73,5 +77,18 @@ Future<void> initDependencies() async {
   // Cubit
   sl.registerFactory(
     () => TaskCubit(taskRepository: sl()),
+  );
+
+  // ----------------------------------------------------
+  // Feature: Meal Planner (Real-time)
+  // ----------------------------------------------------
+  sl.registerLazySingleton<MealPlanRemoteDataSource>(
+    () => MealPlanRemoteDataSourceImpl(),
+  );
+  sl.registerLazySingleton<MealPlanRepository>(
+    () => MealPlanRepositoryImpl(remoteDataSource: sl()),
+  );
+  sl.registerFactory(
+    () => MealPlanCubit(repository: sl()),
   );
 }
