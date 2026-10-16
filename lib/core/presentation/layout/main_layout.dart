@@ -9,8 +9,12 @@ import '../../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../../features/dashboard/presentation/widgets/add_action_bottom_sheet.dart';
 import '../../../features/todo/presentation/pages/agenda_page.dart';
 import '../../../features/todo/presentation/cubit/task_cubit.dart';
-import '../../../features/finance/presentation/pages/finance_page.dart';
+import '../../../features/auth/presentation/cubit/family_cubit.dart';
+import '../../../features/auth/presentation/cubit/family_state.dart';
 import '../../../features/auth/presentation/pages/settings_page.dart';
+import '../../../features/finance/presentation/cubit/finance_cubit.dart';
+import '../../../features/finance/presentation/pages/finance_page.dart';
+import '../../../features/finance/presentation/widgets/add_transaction_bottom_sheet.dart';
 
 /// MainLayout dengan Bottom Navigation Bar kustom dan Floating Action Button (FAB) menonjol di tengah
 class MainLayout extends StatefulWidget {
@@ -40,60 +44,95 @@ class _MainLayoutState extends State<MainLayout> {
     });
   }
 
-  void _openAddModal() {
+  void _openAddModal(BuildContext context) {
+    String familyId = '00000000-0000-0000-0000-000000000001';
+    String userId = '6471baf6-3b32-4a9b-9ee2-6ada214e4eb2';
+
+    final familyState = context.read<FamilyCubit>().state;
+    if (familyState is FamilyLoaded) {
+      if (familyState.family != null) familyId = familyState.family!.id;
+      userId = familyState.profile.id;
+    }
+
     AddActionBottomSheet.show(
       context,
       onAddFinance: () {
-        _onTabSelected(2); // Pindah ke Keuangan
+        _onTabSelected(2);
+        AddTransactionBottomSheet.show(
+          context,
+          familyId: familyId,
+          userId: userId,
+        );
       },
       onAddTask: () {
-        _onTabSelected(1); // Pindah ke Agenda
+        _onTabSelected(1);
       },
       onAddMeal: () {
-        _onTabSelected(1); // Pindah ke Meal Plan / Agenda
+        _onTabSelected(1);
       },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      DashboardPage(
-        onNavigateToFinance: () => _onTabSelected(2),
-        onNavigateToAgenda: () => _onTabSelected(1),
-        onNavigateToSettings: () => _onTabSelected(3),
-      ),
-      BlocProvider(
-        create: (context) => sl<TaskCubit>()..watchTasks('00000000-0000-0000-0000-000000000000'),
-        child: const AgendaPage(),
-      ),
-      const FinancePage(),
-      const SettingsPage(),
-    ];
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => sl<FamilyCubit>()..loadFamilyData(),
+        ),
+        BlocProvider(
+          create: (_) => sl<FinanceCubit>()
+            ..watchFamilyTransactions('00000000-0000-0000-0000-000000000001'),
+        ),
+        BlocProvider(
+          create: (_) => sl<TaskCubit>()
+            ..watchTasks('00000000-0000-0000-0000-000000000001'),
+        ),
+      ],
+      child: Builder(
+        builder: (innerContext) {
+          final pages = [
+            DashboardPage(
+              onNavigateToFinance: () => _onTabSelected(2),
+              onNavigateToAgenda: () => _onTabSelected(1),
+              onNavigateToSettings: () => _onTabSelected(3),
+            ),
+            const AgendaPage(),
+            const FinancePage(),
+            const SettingsPage(),
+          ];
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          // Konten Layar Aktif
-          IndexedStack(
-            index: _currentIndex,
-            children: pages,
-          ),
-
-          // Custom Bottom Navigation Bar
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildBottomNav(),
-          ),
-        ],
+          return BlocListener<FamilyCubit, FamilyState>(
+            listener: (context, state) {
+              if (state is FamilyLoaded && state.family != null) {
+                context.read<FinanceCubit>().watchFamilyTransactions(state.family!.id);
+                context.read<TaskCubit>().watchTasks(state.family!.id);
+              }
+            },
+            child: Scaffold(
+              backgroundColor: AppColors.background,
+              body: Stack(
+                children: [
+                  IndexedStack(
+                    index: _currentIndex,
+                    children: pages,
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: _buildBottomNav(innerContext),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(BuildContext context) {
     return Stack(
       alignment: Alignment.topCenter,
       clipBehavior: Clip.none,
@@ -144,7 +183,7 @@ class _MainLayoutState extends State<MainLayout> {
         Positioned(
           top: -24,
           child: GestureDetector(
-            onTap: _openAddModal,
+            onTap: () => _openAddModal(context),
             child: Container(
               width: 60,
               height: 60,

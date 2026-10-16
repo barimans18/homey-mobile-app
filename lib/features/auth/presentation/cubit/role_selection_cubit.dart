@@ -4,7 +4,8 @@ import 'role_selection_state.dart';
 
 /// Cubit untuk menangani pemilihan dan konfirmasi peran (Suami / Istri)
 class RoleSelectionCubit extends Cubit<RoleSelectionState> {
-  RoleSelectionCubit() : super(const RoleSelectionInitial());
+  RoleSelectionCubit()
+      : super(const RoleSelectionLoaded(selectedRole: UserRole.husband, isConfirmed: false));
 
   /// Memilih salah satu peran
   void selectRole(UserRole role) {

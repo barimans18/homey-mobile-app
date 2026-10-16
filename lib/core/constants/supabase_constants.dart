@@ -11,6 +11,7 @@ class SupabaseConstants {
 
   static const String anonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
-    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy',
+    defaultValue:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5anNqdmh1Ym13aG9ld2t2cmV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxMjkyNTEsImV4cCI6MjEwNzcwNTI1MX0.cGsFNCnesIWWtP5bq9O4Wr5decG7fnnZk6gXaOd4qiA',
   );
 }

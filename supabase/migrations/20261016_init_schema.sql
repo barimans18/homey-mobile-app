@@ -56,6 +56,8 @@ as $$
     limit 1;
 $$;
 
+revoke execute on function public.get_current_family_id() from public, anon;
+
 -- ==============================================================================
 -- 5. TABEL: TRANSACTIONS (JOINT LEDGER)
 -- Buku kas bersama (pemasukan/pengeluaran, kategori, nominal, tanggal)
@@ -129,12 +131,15 @@ create index if not exists idx_meal_plans_family_date on public.meal_plans (fami
 -- 8. TRIGGER: AUTO-UPDATE updated_at TIMESTAMP
 -- ==============================================================================
 create or replace function public.handle_updated_at()
-returns trigger as $$
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
 begin
     new.updated_at = now();
     return new;
 end;
-$$ language plpgsql;
+$$;
 
 create trigger tr_families_updated_at
     before update on public.families

@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/constants/supabase_constants.dart';
@@ -9,6 +10,9 @@ import 'core/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inisialisasi locale formatting untuk Bahasa Indonesia (id_ID)
+  await initializeDateFormatting('id_ID', null);
 
   // 1. Inisialisasi Dependency Injection (GetIt)
   await di.initDependencies();

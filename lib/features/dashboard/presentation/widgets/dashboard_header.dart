@@ -19,7 +19,12 @@ class DashboardHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     // Format tanggal: misal "Jumat, 16 Okt 2026"
-    final dateFormatted = DateFormat('EEEE, d MMM y', 'id_ID').format(now);
+    String dateFormatted;
+    try {
+      dateFormatted = DateFormat('EEEE, d MMM y', 'id_ID').format(now);
+    } catch (_) {
+      dateFormatted = DateFormat('EEEE, d MMM y').format(now);
+    }
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
