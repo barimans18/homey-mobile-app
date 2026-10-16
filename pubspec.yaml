@@ -1,0 +1,47 @@
+name: homey
+description: "A cozy household management app for couples."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  flutter_bloc: ^9.1.0
+  equatable: ^2.0.7
+
+  # Backend & Realtime
+  supabase_flutter: ^2.8.4
+
+  # Routing & Dependency Injection
+  go_router: ^14.8.1
+  get_it: ^8.0.3
+
+  # UI, Fonts & Icons
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.17
+
+  # Local Caching & Offline Support
+  sqflite: ^2.4.1
+  path: ^1.9.1
+
+  # Utilities
+  intl: ^0.20.2
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  bloc_test: ^10.0.0
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/
+    - assets/images/

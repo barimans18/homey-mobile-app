@@ -1,0 +1,12 @@
+{
+  "dart.flutterSdkPath": ".fvm/flutter_sdk",
+  "search.exclude": {
+    "**/.fvm": true
+  },
+  "files.watcherExclude": {
+    "**/.fvm": true
+  },
+  "java.import.gradle.enabled": false,
+  "java.autobuild.enabled": false,
+  "gradle.autoDetect": "off"
+}
