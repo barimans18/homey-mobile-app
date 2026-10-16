@@ -68,11 +68,26 @@ class FamilyRepositoryImpl implements FamilyRepository {
     required String userId,
     String? fullName,
     String? role,
+    String? avatarUrl,
   }) {
     return _remoteDataSource.updateProfile(
       userId: userId,
       fullName: fullName,
       role: role,
+      avatarUrl: avatarUrl,
+    );
+  }
+
+  @override
+  Future<String> uploadAvatar({
+    required String userId,
+    required List<int> imageBytes,
+    required String fileName,
+  }) {
+    return _remoteDataSource.uploadAvatar(
+      userId: userId,
+      imageBytes: imageBytes,
+      fileName: fileName,
     );
   }
 }

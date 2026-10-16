@@ -7,11 +7,15 @@ import '../../../../core/constants/app_shadows.dart';
 /// Header beranda dengan tanggal hari ini, sapaan hangat personal, dan avatar keluarga
 class DashboardHeader extends StatelessWidget {
   final String greetingName;
+  final String? avatarUrl;
+  final String? role;
   final VoidCallback? onProfileTap;
 
   const DashboardHeader({
     super.key,
     this.greetingName = 'Pasutri',
+    this.avatarUrl,
+    this.role,
     this.onProfileTap,
   });
 
@@ -64,10 +68,26 @@ class DashboardHeader extends StatelessWidget {
               border: Border.all(color: Colors.white, width: 2),
               boxShadow: AppShadows.card,
             ),
-            child: const Icon(
-              Icons.people_alt_rounded,
-              color: AppColors.accentTerracotta,
-              size: 22,
+            child: ClipOval(
+              child: (avatarUrl != null && avatarUrl!.isNotEmpty)
+                  ? Image.network(
+                      avatarUrl!,
+                      fit: BoxFit.cover,
+                      width: 44,
+                      height: 44,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: Text(
+                          role?.toLowerCase() == 'suami' ? '👨' : (role?.toLowerCase() == 'istri' ? '👩' : '🏡'),
+                          style: const TextStyle(fontSize: 22),
+                        ),
+                      ),
+                    )
+                  : Center(
+                      child: Text(
+                        role?.toLowerCase() == 'suami' ? '👨' : (role?.toLowerCase() == 'istri' ? '👩' : '🏡'),
+                        style: const TextStyle(fontSize: 22),
+                      ),
+                    ),
             ),
           ),
         ),

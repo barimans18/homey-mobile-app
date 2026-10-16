@@ -40,17 +40,30 @@ class MealPlanCubit extends Cubit<MealPlanState> {
   }
 
   Future<void> addMealPlan(MealPlanEntity mealPlan) async {
+    final currentState = state;
+    if (currentState is MealPlanLoaded) {
+      final updatedList = [mealPlan, ...currentState.mealPlans];
+      emit(currentState.copyWith(mealPlans: updatedList));
+    }
     try {
       await _repository.createMealPlan(mealPlan);
     } catch (e) {
+      emit(currentState);
       emit(MealPlanError('Gagal menambahkan menu makan: $e'));
     }
   }
 
   Future<void> deleteMealPlan(String id) async {
+    final currentState = state;
+    if (currentState is MealPlanLoaded) {
+      final updatedList =
+          currentState.mealPlans.where((m) => m.id != id).toList();
+      emit(currentState.copyWith(mealPlans: updatedList));
+    }
     try {
       await _repository.deleteMealPlan(id);
     } catch (e) {
+      emit(currentState);
       emit(MealPlanError('Gagal menghapus menu makan: $e'));
     }
   }

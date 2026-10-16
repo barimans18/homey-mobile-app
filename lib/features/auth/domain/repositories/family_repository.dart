@@ -22,6 +22,12 @@ abstract class FamilyRepository {
     required String userId,
     String? fullName,
     String? role,
+    String? avatarUrl,
+  });
+  Future<String> uploadAvatar({
+    required String userId,
+    required List<int> imageBytes,
+    required String fileName,
   });
 }
 

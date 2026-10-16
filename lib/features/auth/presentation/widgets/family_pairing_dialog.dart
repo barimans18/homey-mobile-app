@@ -140,14 +140,16 @@ class _FamilyPairingDialogState extends State<FamilyPairingDialog> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      _isCreatingNew
-                          ? 'Buat Keluarga Baru 🏡'
-                          : 'Hubungkan dengan Pasangan 🔗',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w800,
-                          ),
+                    Expanded(
+                      child: Text(
+                        _isCreatingNew
+                            ? 'Buat Keluarga Baru 🏡'
+                            : 'Hubungkan dengan Pasangan 🔗',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),

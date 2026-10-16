@@ -35,33 +35,64 @@ class TaskCubit extends Cubit<TaskState> {
     required bool isCompleted,
     required String currentUserId,
   }) async {
+    final currentState = state;
+    // 1. Optimistic UI update: langsung ubah status di layar secara instan
+    if (currentState is TaskLoaded) {
+      final updatedTasks = currentState.tasks.map((t) {
+        if (t.id == taskId) {
+          return t.copyWith(
+            isCompleted: isCompleted,
+            completedBy: isCompleted ? currentUserId : null,
+            completedAt: isCompleted ? DateTime.now() : null,
+          );
+        }
+        return t;
+      }).toList();
+      emit(TaskLoaded(tasks: updatedTasks));
+    }
+
     try {
       await _taskRepository.toggleTaskCompletion(
         taskId: taskId,
         isCompleted: isCompleted,
         completedBy: currentUserId,
       );
-      // Catatan: Tidak perlu memanggil emit manual di sini, karena Supabase Realtime
-      // akan otomatis mengirim event UPDATE dan stream listener di atas akan meng-emit TaskLoaded.
     } catch (e) {
+      // Revert jika gagal
+      emit(currentState);
       emit(TaskError('Gagal memperbarui status tugas: ${e.toString()}'));
     }
   }
 
   /// Menambahkan tugas baru
   Future<void> addTask(TaskEntity task) async {
+    final currentState = state;
+    if (currentState is TaskLoaded) {
+      final updatedTasks = [task, ...currentState.tasks];
+      emit(TaskLoaded(tasks: updatedTasks));
+    }
     try {
       await _taskRepository.createTask(task);
     } catch (e) {
+      emit(currentState);
       emit(TaskError('Gagal menambahkan tugas: ${e.toString()}'));
     }
   }
 
-  /// Menghapus tugas
+  /// Menghapus tugas secara instan dari layar (optimistic) & sinkron ke Supabase
   Future<void> deleteTask(String taskId) async {
+    final currentState = state;
+    // 1. Optimistic UI update: langsung buang dari layar tanpa menunggu roundtrip network
+    if (currentState is TaskLoaded) {
+      final updatedTasks = currentState.tasks.where((t) => t.id != taskId).toList();
+      emit(TaskLoaded(tasks: updatedTasks));
+    }
+
     try {
       await _taskRepository.deleteTask(taskId);
     } catch (e) {
+      // Kembalikan ke state semula jika network error
+      emit(currentState);
       emit(TaskError('Gagal menghapus tugas: ${e.toString()}'));
     }
   }

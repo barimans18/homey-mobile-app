@@ -8,6 +8,7 @@ class SessionStorageService {
   static const String _keyFullName = 'homey_user_full_name';
   static const String _keyFamilyId = 'homey_family_id';
   static const String _keyFamilyName = 'homey_family_name';
+  static const String _keyAvatarUrl = 'homey_avatar_url';
 
   final SharedPreferences _prefs;
 
@@ -20,6 +21,7 @@ class SessionStorageService {
     String? fullName,
     String? familyId,
     String? familyName,
+    String? avatarUrl,
   }) async {
     await _prefs.setBool(_keyIsLoggedIn, true);
     await _prefs.setString(_keyUserId, userId);
@@ -32,6 +34,9 @@ class SessionStorageService {
     }
     if (familyName != null && familyName.isNotEmpty) {
       await _prefs.setString(_keyFamilyName, familyName);
+    }
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      await _prefs.setString(_keyAvatarUrl, avatarUrl);
     }
   }
 
@@ -46,6 +51,7 @@ class SessionStorageService {
   String? getFullName() => _prefs.getString(_keyFullName);
   String? getFamilyId() => _prefs.getString(_keyFamilyId);
   String? getFamilyName() => _prefs.getString(_keyFamilyName);
+  String? getAvatarUrl() => _prefs.getString(_keyAvatarUrl);
 
   /// Hapus sesi (Logout / Reset)
   Future<void> clearSession() async {
@@ -55,5 +61,6 @@ class SessionStorageService {
     await _prefs.remove(_keyFullName);
     await _prefs.remove(_keyFamilyId);
     await _prefs.remove(_keyFamilyName);
+    await _prefs.remove(_keyAvatarUrl);
   }
 }

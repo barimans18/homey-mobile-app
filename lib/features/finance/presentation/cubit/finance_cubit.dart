@@ -39,17 +39,31 @@ class FinanceCubit extends Cubit<FinanceState> {
   }
 
   Future<void> addTransaction(TransactionEntity transaction) async {
+    final currentState = state;
+    if (currentState is FinanceLoaded) {
+      final updatedList = [transaction, ...currentState.transactions];
+      emit(currentState.copyWith(transactions: updatedList));
+    }
     try {
       await _financeRepository.createTransaction(transaction);
     } catch (e) {
+      emit(currentState);
       emit(FinanceError('Gagal menyimpan transaksi: $e'));
     }
   }
 
   Future<void> deleteTransaction(String transactionId) async {
+    final currentState = state;
+    if (currentState is FinanceLoaded) {
+      final updatedList = currentState.transactions
+          .where((t) => t.id != transactionId)
+          .toList();
+      emit(currentState.copyWith(transactions: updatedList));
+    }
     try {
       await _financeRepository.deleteTransaction(transactionId);
     } catch (e) {
+      emit(currentState);
       emit(FinanceError('Gagal menghapus transaksi: $e'));
     }
   }

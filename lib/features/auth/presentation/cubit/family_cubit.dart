@@ -160,7 +160,11 @@ class FamilyCubit extends Cubit<FamilyState> {
     }
   }
 
-  Future<void> updateProfile({String? fullName, String? role}) async {
+  Future<void> updateProfile({
+    String? fullName,
+    String? role,
+    String? avatarUrl,
+  }) async {
     try {
       final profile = await _familyRepository.getMyProfile();
       if (profile == null) return;
@@ -168,6 +172,15 @@ class FamilyCubit extends Cubit<FamilyState> {
         userId: profile.id,
         fullName: fullName,
         role: role,
+        avatarUrl: avatarUrl,
+      );
+      // Update sesi lokal
+      sl<SessionStorageService>().saveSession(
+        userId: profile.id,
+        role: role ?? profile.role,
+        fullName: fullName ?? profile.fullName,
+        familyId: profile.familyId,
+        avatarUrl: avatarUrl ?? profile.avatarUrl,
       );
       await loadFamilyData();
     } catch (e) {
@@ -175,6 +188,29 @@ class FamilyCubit extends Cubit<FamilyState> {
       if (currentState is FamilyLoaded) {
         emit(currentState.copyWith(notificationMessage: 'Gagal update profil: $e'));
       }
+    }
+  }
+
+  Future<String?> uploadAvatar({
+    required List<int> imageBytes,
+    required String fileName,
+  }) async {
+    try {
+      final profile = await _familyRepository.getMyProfile();
+      if (profile == null) return null;
+      final url = await _familyRepository.uploadAvatar(
+        userId: profile.id,
+        imageBytes: imageBytes,
+        fileName: fileName,
+      );
+      await updateProfile(avatarUrl: url);
+      return url;
+    } catch (e) {
+      final currentState = state;
+      if (currentState is FamilyLoaded) {
+        emit(currentState.copyWith(notificationMessage: 'Gagal mengupload foto: $e'));
+      }
+      return null;
     }
   }
 

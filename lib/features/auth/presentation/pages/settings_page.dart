@@ -13,6 +13,7 @@ import '../../../../core/services/session_storage_service.dart';
 import '../cubit/family_cubit.dart';
 import '../cubit/family_state.dart';
 import '../widgets/family_pairing_dialog.dart';
+import '../widgets/edit_profile_bottom_sheet.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -85,20 +86,64 @@ class SettingsPage extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: isHusband
-                              ? AppColors.accentTerracotta.withValues(alpha: 0.15)
-                              : AppColors.accentGreen.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            isHusband ? '👨' : '👩',
-                            style: const TextStyle(fontSize: 28),
-                          ),
+                      GestureDetector(
+                        onTap: () {
+                          if (profile != null) {
+                            EditProfileBottomSheet.show(context, profile: profile);
+                          }
+                        },
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            Container(
+                              width: 58,
+                              height: 58,
+                              decoration: BoxDecoration(
+                                color: isHusband
+                                    ? AppColors.accentTerracotta.withValues(alpha: 0.15)
+                                    : AppColors.accentGreen.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.accentTerracotta.withValues(alpha: 0.3),
+                                  width: 2,
+                                ),
+                              ),
+                              child: ClipOval(
+                                child: (profile?.avatarUrl != null &&
+                                        profile!.avatarUrl!.isNotEmpty)
+                                    ? Image.network(
+                                        profile.avatarUrl!,
+                                        fit: BoxFit.cover,
+                                        width: 58,
+                                        height: 58,
+                                        errorBuilder: (_, __, ___) => Center(
+                                          child: Text(
+                                            isHusband ? '👨' : '👩',
+                                            style: const TextStyle(fontSize: 28),
+                                          ),
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Text(
+                                          isHusband ? '👨' : '👩',
+                                          style: const TextStyle(fontSize: 28),
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: AppColors.accentTerracotta,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt_rounded,
+                                color: Colors.white,
+                                size: 11,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -140,19 +185,28 @@ class SettingsPage extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // Tombol Ganti Peran
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.textMuted,
+                      // Tombol Edit Profil (Ganti Nama & Foto)
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.accentTerracotta,
+                          side: BorderSide(
+                            color: AppColors.accentTerracotta.withValues(alpha: 0.4),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          visualDensity: VisualDensity.compact,
                         ),
-                        icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                        icon: const Icon(Icons.edit_outlined, size: 15),
                         label: const Text(
-                          'Ubah',
+                          'Edit Profil',
                           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                         ),
                         onPressed: () {
-                          final newRole = isHusband ? 'istri' : 'suami';
-                          context.read<FamilyCubit>().updateRole(newRole);
+                          if (profile != null) {
+                            EditProfileBottomSheet.show(context, profile: profile);
+                          }
                         },
                       ),
                     ],

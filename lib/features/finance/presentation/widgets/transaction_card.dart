@@ -115,12 +115,16 @@ class TransactionCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     const Text('•', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
                     const SizedBox(width: 4),
-                    Text(
-                      dateText,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textMuted,
+                    Flexible(
+                      child: Text(
+                        dateText,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textMuted,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],

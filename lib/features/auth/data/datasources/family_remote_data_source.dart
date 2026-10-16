@@ -28,6 +28,12 @@ abstract class FamilyRemoteDataSource {
     required String userId,
     String? fullName,
     String? role,
+    String? avatarUrl,
+  });
+  Future<String> uploadAvatar({
+    required String userId,
+    required List<int> imageBytes,
+    required String fileName,
   });
 }
 
@@ -261,6 +267,7 @@ class FamilyRemoteDataSourceImpl implements FamilyRemoteDataSource {
     required String userId,
     String? fullName,
     String? role,
+    String? avatarUrl,
   }) async {
     final updateData = <String, dynamic>{};
     if (fullName != null && fullName.trim().isNotEmpty) {
@@ -269,9 +276,35 @@ class FamilyRemoteDataSourceImpl implements FamilyRemoteDataSource {
     if (role != null) {
       updateData['role'] = role;
     }
+    if (avatarUrl != null) {
+      updateData['avatar_url'] = avatarUrl;
+    }
     if (updateData.isNotEmpty) {
       await _client.from('profiles').update(updateData).eq('id', userId);
     }
+  }
+
+  @override
+  Future<String> uploadAvatar({
+    required String userId,
+    required List<int> imageBytes,
+    required String fileName,
+  }) async {
+    final cleanFileName = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+    final path = 'user_$userId/$cleanFileName';
+
+    await _client.storage.from('avatars').uploadBinary(
+      path,
+      imageBytes as dynamic,
+      fileOptions: const FileOptions(
+        contentType: 'image/jpeg',
+        upsert: true,
+      ),
+    );
+
+    final publicUrl = _client.storage.from('avatars').getPublicUrl(path);
+    final freshUrl = '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+    return freshUrl;
   }
 }
 

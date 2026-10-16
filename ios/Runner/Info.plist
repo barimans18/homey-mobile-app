@@ -66,5 +66,9 @@
 			</array>
 		</dict>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Homey membutuhkan akses kamera untuk mengambil foto profil Anda.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Homey membutuhkan akses galeri foto untuk memilih foto profil Anda.</string>
 </dict>
 </plist>

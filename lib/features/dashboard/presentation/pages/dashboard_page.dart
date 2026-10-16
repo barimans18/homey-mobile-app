@@ -63,6 +63,8 @@ class DashboardPage extends StatelessWidget {
                     children: [
                       DashboardHeader(
                         greetingName: greeting,
+                        avatarUrl: state is FamilyLoaded ? state.profile.avatarUrl : null,
+                        role: state is FamilyLoaded ? state.profile.role : null,
                         onProfileTap: onNavigateToSettings,
                       ),
                       if (!hasFamily) ...[
