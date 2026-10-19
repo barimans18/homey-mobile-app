@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -27,10 +28,14 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _nameController = TextEditingController(text: 'Demo Pasutri');
   final _familyNameController = TextEditingController(text: 'Keluarga Bahagia');
+  final _createPinController = TextEditingController(text: '123456');
   final _inviteCodeController = TextEditingController();
+  final _joinPinController = TextEditingController();
   
   // Tab 0: Buat Rumah Baru, Tab 1: Gabung Rumah Pasangan
   int _selectedFamilyTab = 0;
+  bool _obscureCreatePin = false;
+  bool _obscureJoinPin = true;
   bool _showEmailLogin = false;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -40,7 +45,9 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     _nameController.dispose();
     _familyNameController.dispose();
+    _createPinController.dispose();
     _inviteCodeController.dispose();
+    _joinPinController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -51,26 +58,38 @@ class _LoginPageState extends State<LoginPage> {
     final roleString = selectedRole == UserRole.husband ? 'suami' : 'istri';
 
     if (_selectedFamilyTab == 0) {
-      // 1. Buat Rumah Baru dengan Nama Keluarga
+      // 1. Buat Rumah Baru dengan Nama Keluarga & PIN 6 Digit
       final familyName = _familyNameController.text.trim();
       if (familyName.isEmpty) {
         _showSnackBar('Silakan tentukan Nama Keluarga Anda terlebih dahulu', isError: true);
         return;
       }
+      final pin = _createPinController.text.trim();
+      if (pin.length != 6 || int.tryParse(pin) == null) {
+        _showSnackBar('Silakan buat PIN Keluarga berupa 6 digit angka', isError: true);
+        return;
+      }
       context.read<FamilyCubit>().createFamily(
         familyName,
+        pin: pin,
         fullName: name,
         role: roleString,
       );
     } else {
-      // 2. Gabung dengan Kode Keluarga dari Pasangan
+      // 2. Gabung dengan Kode Keluarga & PIN dari Pasangan
       final code = _inviteCodeController.text.trim();
       if (code.isEmpty) {
         _showSnackBar('Silakan masukkan Kode Keluarga dari pasangan Anda', isError: true);
         return;
       }
+      final pin = _joinPinController.text.trim();
+      if (pin.length != 6 || int.tryParse(pin) == null) {
+        _showSnackBar('Silakan masukkan 6 digit PIN Keluarga dari pasangan Anda', isError: true);
+        return;
+      }
       context.read<FamilyCubit>().joinFamilyByCode(
         code,
+        pin: pin,
         fullName: name,
         role: roleString,
       );
@@ -278,7 +297,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 // Tab Content
                 if (_selectedFamilyTab == 0) ...[
-                  // Opsi A: Buat Rumah Baru (Input Nama Keluarga)
+                  // Opsi A: Buat Rumah Baru (Input Nama Keluarga & PIN 6 Digit)
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
@@ -305,6 +324,40 @@ class _LoginPageState extends State<LoginPage> {
                             prefixIcon: Icon(Icons.home_work_outlined, color: AppColors.accentGreen),
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Buat PIN Keluarga (6 Digit Angka)',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _createPinController,
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
+                          obscureText: _obscureCreatePin,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 3,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: '123456',
+                            counterText: '',
+                            prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.accentTerracotta),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureCreatePin ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                color: AppColors.textMuted,
+                              ),
+                              onPressed: () => setState(() => _obscureCreatePin = !_obscureCreatePin),
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 10),
                         Row(
                           children: const [
@@ -312,7 +365,7 @@ class _LoginPageState extends State<LoginPage> {
                             SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                'Kode unik keluarga akan dibuat otomatis untuk dibagikan ke pasangan.',
+                                'PIN ini dan kode keluarga akan dibagikan ke pasangan saat bergabung.',
                                 style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                               ),
                             ),
@@ -322,7 +375,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ] else ...[
-                  // Opsi B: Gabung dengan Kode Pasangan
+                  // Opsi B: Gabung dengan Kode Pasangan & PIN
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
@@ -356,6 +409,40 @@ class _LoginPageState extends State<LoginPage> {
                             prefixIcon: Icon(Icons.vpn_key_rounded, color: AppColors.accentTerracotta),
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'PIN Keluarga dari Pasangan (6 Digit)',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _joinPinController,
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
+                          obscureText: _obscureJoinPin,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 3,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Masukkan 6 digit PIN',
+                            counterText: '',
+                            prefixIcon: const Icon(Icons.pin_outlined, color: AppColors.accentTerracotta),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureJoinPin ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                color: AppColors.textMuted,
+                              ),
+                              onPressed: () => setState(() => _obscureJoinPin = !_obscureJoinPin),
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 10),
                         Row(
                           children: const [
@@ -363,7 +450,7 @@ class _LoginPageState extends State<LoginPage> {
                             SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                'Minta kode keluarga yang ada di menu Setting pada HP pasangan Anda.',
+                                'Minta kode keluarga dan 6 digit PIN yang ada di menu Settings pasangan Anda.',
                                 style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                               ),
                             ),

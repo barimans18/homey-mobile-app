@@ -12,9 +12,14 @@ abstract class FamilyRepository {
   });
   Future<FamilyEntity> createFamily({
     required String familyName,
+    required String pin,
     String? fullName,
     String? role,
     String? userId,
+  });
+  Future<void> updateFamilyPin({
+    required String familyId,
+    required String newPin,
   });
   Future<List<UserProfileEntity>> getFamilyMembers(String familyId);
   Future<void> updateRole({required String userId, required String role});

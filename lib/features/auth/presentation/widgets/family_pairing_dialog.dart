@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
@@ -29,13 +30,19 @@ class FamilyPairingDialog extends StatefulWidget {
 
 class _FamilyPairingDialogState extends State<FamilyPairingDialog> {
   final _codeController = TextEditingController();
+  final _joinPinController = TextEditingController();
   final _nameController = TextEditingController();
+  final _createPinController = TextEditingController(text: '123456');
   bool _isCreatingNew = false;
+  bool _obscureJoinPin = true;
+  bool _obscureCreatePin = false;
 
   @override
   void dispose() {
     _codeController.dispose();
+    _joinPinController.dispose();
     _nameController.dispose();
+    _createPinController.dispose();
     super.dispose();
   }
 
@@ -50,6 +57,16 @@ class _FamilyPairingDialogState extends State<FamilyPairingDialog> {
       );
       return;
     }
+    final pin = _joinPinController.text.trim();
+    if (pin.length != 6 || int.tryParse(pin) == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Silakan masukkan 6 digit PIN keluarga dari pasangan Anda'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
     final familyState = context.read<FamilyCubit>().state;
     String? role;
     String? name;
@@ -59,6 +76,7 @@ class _FamilyPairingDialogState extends State<FamilyPairingDialog> {
     }
     context.read<FamilyCubit>().joinFamilyByCode(
           code,
+          pin: pin,
           role: role,
           fullName: name,
         );
@@ -75,6 +93,16 @@ class _FamilyPairingDialogState extends State<FamilyPairingDialog> {
       );
       return;
     }
+    final pin = _createPinController.text.trim();
+    if (pin.length != 6 || int.tryParse(pin) == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Silakan buat 6 digit PIN keluarga berupa angka'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
     final familyState = context.read<FamilyCubit>().state;
     String? role;
     String? fullName;
@@ -84,6 +112,7 @@ class _FamilyPairingDialogState extends State<FamilyPairingDialog> {
     }
     context.read<FamilyCubit>().createFamily(
           name,
+          pin: pin,
           role: role,
           fullName: fullName,
         );
@@ -197,6 +226,39 @@ class _FamilyPairingDialogState extends State<FamilyPairingDialog> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'PIN Keluarga dari Pasangan (6 Digit)',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _joinPinController,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    obscureText: _obscureJoinPin,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 3,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Masukkan 6 digit PIN',
+                      counterText: '',
+                      prefixIcon: const Icon(Icons.pin_outlined, color: AppColors.accentTerracotta),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureJoinPin ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          color: AppColors.textMuted,
+                        ),
+                        onPressed: () => setState(() => _obscureJoinPin = !_obscureJoinPin),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   PrimaryButton(
                     text: 'Hubungkan ke Pasangan',
@@ -220,6 +282,39 @@ class _FamilyPairingDialogState extends State<FamilyPairingDialog> {
                       prefixIcon: Icon(
                         Icons.home_rounded,
                         color: AppColors.accentGreen,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Buat PIN Keluarga (6 Digit)',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _createPinController,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    obscureText: _obscureCreatePin,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 3,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: '123456',
+                      counterText: '',
+                      prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.accentTerracotta),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureCreatePin ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          color: AppColors.textMuted,
+                        ),
+                        onPressed: () => setState(() => _obscureCreatePin = !_obscureCreatePin),
                       ),
                     ),
                   ),

@@ -5,6 +5,7 @@ class FamilyModel extends FamilyEntity {
     required super.id,
     required super.name,
     required super.inviteCode,
+    super.pin,
     required super.createdAt,
   });
 
@@ -13,6 +14,7 @@ class FamilyModel extends FamilyEntity {
       id: json['id'] as String,
       name: json['name'] as String,
       inviteCode: json['invite_code'] as String,
+      pin: (json['pin'] as String?) ?? '123456',
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
           : DateTime.now(),
@@ -24,6 +26,7 @@ class FamilyModel extends FamilyEntity {
       'id': id,
       'name': name,
       'invite_code': inviteCode,
+      'pin': pin,
     };
   }
 }

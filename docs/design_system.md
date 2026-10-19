@@ -5,7 +5,7 @@ Tema visual aplikasi Homey adalah hangat, ramah, dan rapi (*cozy & homey*). Hind
 ## 1. Palet Warna
 - **Background:** `#FDFBF7` (Warm off-white)
 - **Text Primary:** `#3D405B` (Soft Navy/Grey, jangan gunakan hitam pekat #000000)
-- **Text Muted:** `#9CA3AF` (Gray untuk subtitle)
+- **Text Muted:** `#5C6279` (Soft Navy Slate untuk subtitle & label dengan kontras optimal)
 - **Accent Green (Budget/Success):** `#81B29A` (Sage green)
 - **Accent Terracotta (Primary Action/Buttons):** `#E07A5F`
 - **Accent Yellow (Warning/Kids/Meals):** `#F2CC8F`

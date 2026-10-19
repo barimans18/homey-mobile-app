@@ -18,9 +18,14 @@ abstract class FamilyRemoteDataSource {
   });
   Future<FamilyModel> createFamily({
     required String familyName,
+    required String pin,
     String? fullName,
     String? role,
     String? userId,
+  });
+  Future<void> updateFamilyPin({
+    required String familyId,
+    required String newPin,
   });
   Future<List<UserProfileModel>> getFamilyMembers(String familyId);
   Future<void> updateRole({required String userId, required String role});
@@ -191,16 +196,19 @@ class FamilyRemoteDataSourceImpl implements FamilyRemoteDataSource {
   @override
   Future<FamilyModel> createFamily({
     required String familyName,
+    required String pin,
     String? fullName,
     String? role,
     String? userId,
   }) async {
+    final cleanPin = pin.trim().isNotEmpty ? pin.trim() : '123456';
     final randomCode = 'HOMEY-${1000 + Random().nextInt(9000)}';
     final insertRes = await _client
         .from('families')
         .insert({
           'name': familyName,
           'invite_code': randomCode,
+          'pin': cleanPin,
         })
         .select()
         .single();
@@ -237,9 +245,34 @@ class FamilyRemoteDataSourceImpl implements FamilyRemoteDataSource {
       fullName: newProfile.fullName,
       familyId: family.id,
       familyName: family.name,
+      familyPin: family.pin,
     );
 
     return family;
+  }
+
+  @override
+  Future<void> updateFamilyPin({
+    required String familyId,
+    required String newPin,
+  }) async {
+    final cleanPin = newPin.trim();
+    if (cleanPin.length != 6 || int.tryParse(cleanPin) == null) {
+      throw Exception('PIN keluarga harus berupa 6 digit angka');
+    }
+    await _client.from('families').update({'pin': cleanPin}).eq('id', familyId);
+    final storage = sl<SessionStorageService>();
+    if (storage.getFamilyId() == familyId) {
+      storage.saveSession(
+        userId: storage.getUserId() ?? '',
+        role: storage.getRole() ?? '',
+        fullName: storage.getFullName(),
+        familyId: familyId,
+        familyName: storage.getFamilyName(),
+        familyPin: cleanPin,
+        avatarUrl: storage.getAvatarUrl(),
+      );
+    }
   }
 
   @override

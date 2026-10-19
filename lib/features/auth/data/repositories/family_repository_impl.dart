@@ -41,15 +41,28 @@ class FamilyRepositoryImpl implements FamilyRepository {
   @override
   Future<FamilyEntity> createFamily({
     required String familyName,
+    required String pin,
     String? fullName,
     String? role,
     String? userId,
   }) {
     return _remoteDataSource.createFamily(
       familyName: familyName,
+      pin: pin,
       fullName: fullName,
       role: role,
       userId: userId,
+    );
+  }
+
+  @override
+  Future<void> updateFamilyPin({
+    required String familyId,
+    required String newPin,
+  }) {
+    return _remoteDataSource.updateFamilyPin(
+      familyId: familyId,
+      newPin: newPin,
     );
   }
 

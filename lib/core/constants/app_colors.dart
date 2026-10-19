@@ -10,8 +10,8 @@ class AppColors {
   /// Text Primary: #3D405B (Soft Navy/Grey, hindari hitam pekat)
   static const Color textPrimary = Color(0xFF3D405B);
 
-  /// Text Muted: #9CA3AF (Gray untuk subtitle)
-  static const Color textMuted = Color(0xFF9CA3AF);
+  /// Text Muted: #5C6279 (Soft Navy Slate untuk subtitle & label dengan kontras optimal)
+  static const Color textMuted = Color(0xFF5C6279);
 
   /// Accent Green (Budget/Success): #81B29A (Sage green)
   static const Color accentGreen = Color(0xFF81B29A);

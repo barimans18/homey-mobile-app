@@ -33,6 +33,7 @@ class FamilyCubit extends Cubit<FamilyState> {
             fullName: profile.fullName,
             familyId: family.id,
             familyName: family.name,
+            familyPin: family.pin,
           );
         }
 
@@ -55,6 +56,7 @@ class FamilyCubit extends Cubit<FamilyState> {
 
   Future<void> joinFamilyByCode(
     String inviteCode, {
+    required String pin,
     String? fullName,
     String? role,
   }) async {
@@ -63,6 +65,25 @@ class FamilyCubit extends Cubit<FamilyState> {
 
     try {
       final cleanCode = inviteCode.trim().toUpperCase();
+      final cleanPin = pin.trim();
+
+      if (cleanPin.length != 6 || int.tryParse(cleanPin) == null) {
+        final profile = await _familyRepository.getMyProfile();
+        emit(FamilyLoaded(
+          profile: profile ??
+              UserProfileEntity(
+                id: 'anon',
+                role: role ?? 'istri',
+                fullName: fullName,
+              ),
+          family: null,
+          members: const [],
+          isPairingLoading: false,
+          notificationMessage: 'PIN keluarga harus berupa 6 digit angka.',
+        ));
+        return;
+      }
+
       final family = await _familyRepository.findFamilyByInviteCode(cleanCode);
 
       if (family == null) {
@@ -82,6 +103,24 @@ class FamilyCubit extends Cubit<FamilyState> {
         return;
       }
 
+      // Validasi PIN keluarga
+      if (family.pin.isNotEmpty && family.pin != cleanPin) {
+        final profile = await _familyRepository.getMyProfile();
+        emit(FamilyLoaded(
+          profile: profile ??
+              UserProfileEntity(
+                id: 'anon',
+                role: role ?? 'istri',
+                fullName: fullName,
+              ),
+          family: null,
+          members: const [],
+          isPairingLoading: false,
+          notificationMessage: 'PIN keluarga tidak sesuai. Silakan minta 6 digit PIN ke pasangan Anda.',
+        ));
+        return;
+      }
+
       final joinedProfile = await _familyRepository.joinFamily(
         familyId: family.id,
         role: role ?? 'istri',
@@ -97,6 +136,7 @@ class FamilyCubit extends Cubit<FamilyState> {
         fullName: joinedProfile.fullName,
         familyId: family.id,
         familyName: family.name,
+        familyPin: family.pin,
       );
 
       emit(FamilyLoaded(
@@ -120,6 +160,7 @@ class FamilyCubit extends Cubit<FamilyState> {
 
   Future<void> createFamily(
     String familyName, {
+    required String pin,
     String? fullName,
     String? role,
   }) async {
@@ -127,8 +168,27 @@ class FamilyCubit extends Cubit<FamilyState> {
     emit(const FamilyLoading());
 
     try {
+      final cleanPin = pin.trim();
+      if (cleanPin.length != 6 || int.tryParse(cleanPin) == null) {
+        final profile = await _familyRepository.getMyProfile();
+        emit(FamilyLoaded(
+          profile: profile ??
+              UserProfileEntity(
+                id: 'anon',
+                role: role ?? 'suami',
+                fullName: fullName,
+              ),
+          family: null,
+          members: const [],
+          isPairingLoading: false,
+          notificationMessage: 'PIN keluarga harus berupa 6 digit angka.',
+        ));
+        return;
+      }
+
       final newFamily = await _familyRepository.createFamily(
         familyName: familyName.trim().isEmpty ? 'Keluarga Kita' : familyName.trim(),
+        pin: cleanPin,
         fullName: fullName,
         role: role,
       );
@@ -146,7 +206,7 @@ class FamilyCubit extends Cubit<FamilyState> {
         family: newFamily,
         members: members,
         isPairingLoading: false,
-        notificationMessage: 'Keluarga baru berhasil dibuat! Bagikan kode "${newFamily.inviteCode}" ke pasangan ya.',
+        notificationMessage: 'Keluarga baru berhasil dibuat! Bagikan kode "${newFamily.inviteCode}" dan PIN 6 digit ke pasangan ya.',
       ));
     } catch (e) {
       if (currentState is FamilyLoaded) {
@@ -157,6 +217,37 @@ class FamilyCubit extends Cubit<FamilyState> {
       } else {
         emit(FamilyError('Gagal membuat keluarga: $e'));
       }
+    }
+  }
+
+  Future<void> updateFamilyPin(String newPin) async {
+    final currentState = state;
+    if (currentState is! FamilyLoaded || currentState.family == null) return;
+
+    final cleanPin = newPin.trim();
+    if (cleanPin.length != 6 || int.tryParse(cleanPin) == null) {
+      emit(currentState.copyWith(
+        notificationMessage: 'PIN baru harus terdiri dari 6 digit angka.',
+      ));
+      return;
+    }
+
+    try {
+      await _familyRepository.updateFamilyPin(
+        familyId: currentState.family!.id,
+        newPin: cleanPin,
+      );
+      await loadFamilyData();
+      final updatedState = state;
+      if (updatedState is FamilyLoaded) {
+        emit(updatedState.copyWith(
+          notificationMessage: 'PIN keluarga berhasil diperbarui! 🎉',
+        ));
+      }
+    } catch (e) {
+      emit(currentState.copyWith(
+        notificationMessage: 'Gagal memperbarui PIN keluarga: $e',
+      ));
     }
   }
 

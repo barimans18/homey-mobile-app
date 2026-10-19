@@ -15,8 +15,110 @@ import '../cubit/family_state.dart';
 import '../widgets/family_pairing_dialog.dart';
 import '../widgets/edit_profile_bottom_sheet.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  bool _obscurePin = true;
+
+  void _showChangePinDialog(BuildContext context, String currentPin) {
+    final familyCubit = context.read<FamilyCubit>();
+    final messenger = ScaffoldMessenger.of(context);
+    final pinController = TextEditingController(text: currentPin);
+    bool obscure = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return BlocProvider.value(
+          value: familyCubit,
+          child: StatefulBuilder(
+            builder: (innerCtx, setDialogState) {
+              return AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: AppRadii.cardRadius),
+                title: const Row(
+                  children: [
+                    Icon(Icons.lock_reset_rounded, color: AppColors.accentTerracotta),
+                    SizedBox(width: 8),
+                    Text('Ubah PIN Keluarga', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Masukkan 6 digit angka PIN baru untuk keluarga Anda:',
+                      style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: pinController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      obscureText: obscure,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 4,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: '123456',
+                        counterText: '',
+                        prefixIcon: const Icon(Icons.pin_outlined, color: AppColors.accentTerracotta),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                            color: AppColors.textMuted,
+                          ),
+                          onPressed: () {
+                            setDialogState(() => obscure = !obscure);
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    child: const Text('Batal'),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accentTerracotta,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () {
+                      final newPin = pinController.text.trim();
+                      if (newPin.length != 6 || int.tryParse(newPin) == null) {
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('PIN harus berupa 6 digit angka'),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                        return;
+                      }
+                      Navigator.pop(dialogCtx);
+                      familyCubit.updateFamilyPin(newPin);
+                    },
+                    child: const Text('Simpan PIN'),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +128,23 @@ class SettingsPage extends StatelessWidget {
         title: 'Pengaturan ⚙️',
         subtitle: 'Keluarga, pairing & preferensi akun',
       ),
-      body: BlocBuilder<FamilyCubit, FamilyState>(
+      body: BlocConsumer<FamilyCubit, FamilyState>(
+        listener: (context, state) {
+          if (state is FamilyLoaded && state.notificationMessage != null) {
+            final isSuccess = state.notificationMessage!.contains('berhasil') ||
+                state.notificationMessage!.contains('Yeay');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.notificationMessage!,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                backgroundColor: isSuccess ? AppColors.accentGreen : AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
         builder: (context, state) {
           if (state is FamilyLoading) {
             return const Center(
@@ -361,9 +479,110 @@ class SettingsPage extends StatelessWidget {
                             ],
                           ),
                         ),
+                        const SizedBox(height: 12),
+
+                        // Box PIN Keluarga Unik (6 Digit)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Row(
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'PIN KELUARGA (6 DIGIT)',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textMuted,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        _obscurePin ? '••••••' : family.pin,
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w900,
+                                          color: AppColors.textPrimary,
+                                          letterSpacing: 3,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      GestureDetector(
+                                        onTap: () => setState(() => _obscurePin = !_obscurePin),
+                                        child: Icon(
+                                          _obscurePin
+                                              ? Icons.visibility_outlined
+                                              : Icons.visibility_off_outlined,
+                                          size: 18,
+                                          color: AppColors.textMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const Spacer(),
+                              // Tombol Ubah PIN
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.accentTerracotta),
+                                tooltip: 'Ubah PIN',
+                                onPressed: () => _showChangePinDialog(context, family.pin),
+                              ),
+                              // Tombol Salin PIN
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: AppColors.textPrimary,
+                                  elevation: 0,
+                                  side: const BorderSide(color: AppColors.border),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                icon: const Icon(Icons.copy_rounded, size: 15),
+                                label: const Text(
+                                  'Salin PIN',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Clipboard.setData(
+                                    ClipboardData(text: family.pin),
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('PIN Keluarga berhasil disalin!'),
+                                      backgroundColor: AppColors.accentGreen,
+                                      behavior: SnackBarBehavior.floating,
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
                         const SizedBox(height: 10),
                         const Text(
-                          'Bagikan kode di atas kepada pasangan Anda agar seluruh catatan kas dan agenda harian tersinkronisasi otomatis.',
+                          'Bagikan Kode Keluarga dan PIN 6 digit di atas kepada pasangan Anda agar dapat bergabung dan seluruh catatan tersinkronisasi otomatis.',
                           style: TextStyle(
                             fontSize: 11,
                             color: AppColors.textMuted,

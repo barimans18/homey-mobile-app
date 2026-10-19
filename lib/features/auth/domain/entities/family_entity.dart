@@ -4,17 +4,19 @@ class FamilyEntity extends Equatable {
   final String id;
   final String name;
   final String inviteCode;
+  final String pin;
   final DateTime createdAt;
 
   const FamilyEntity({
     required this.id,
     required this.name,
     required this.inviteCode,
+    this.pin = '123456',
     required this.createdAt,
   });
 
   @override
-  List<Object?> get props => [id, name, inviteCode, createdAt];
+  List<Object?> get props => [id, name, inviteCode, pin, createdAt];
 }
 
 class UserProfileEntity extends Equatable {
