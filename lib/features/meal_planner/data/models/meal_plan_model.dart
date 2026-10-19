@@ -10,14 +10,15 @@ class MealPlanModel extends MealPlanEntity {
     required super.title,
     super.notes,
     super.ingredients,
+    super.imageUrl,
     super.isSyncedToGrocery,
   });
 
   factory MealPlanModel.fromJson(Map<String, dynamic> json) {
-    List<String> parsedIngredients = [];
+    List<MealIngredient> parsedIngredients = [];
     if (json['ingredients'] != null && json['ingredients'] is List) {
       parsedIngredients = (json['ingredients'] as List)
-          .map((e) => e.toString())
+          .map((e) => MealIngredient.fromDynamic(e))
           .toList();
     }
 
@@ -37,6 +38,7 @@ class MealPlanModel extends MealPlanEntity {
       title: json['title'] as String? ?? '',
       notes: json['notes'] as String?,
       ingredients: parsedIngredients,
+      imageUrl: json['image_url'] as String?,
       isSyncedToGrocery: json['is_synced_to_grocery'] as bool? ?? false,
     );
   }
@@ -50,7 +52,8 @@ class MealPlanModel extends MealPlanEntity {
       'meal_type': mealType.value,
       'title': title,
       'notes': notes,
-      'ingredients': ingredients,
+      'ingredients': ingredients.map((e) => e.toJson()).toList(),
+      if (imageUrl != null) 'image_url': imageUrl,
       'is_synced_to_grocery': isSyncedToGrocery,
     };
   }

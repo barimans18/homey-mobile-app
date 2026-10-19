@@ -14,6 +14,7 @@ import '../../../meal_planner/domain/entities/meal_plan_entity.dart';
 import '../../../meal_planner/presentation/cubit/meal_plan_cubit.dart';
 import '../../../meal_planner/presentation/cubit/meal_plan_state.dart';
 import '../../../meal_planner/presentation/widgets/add_meal_plan_bottom_sheet.dart';
+import '../../../meal_planner/presentation/widgets/meal_plan_detail_bottom_sheet.dart';
 import '../../domain/entities/task_entity.dart';
 import '../cubit/task_cubit.dart';
 import '../cubit/task_state.dart';
@@ -45,11 +46,45 @@ class _AgendaPageState extends State<AgendaPage> {
     context.read<MealPlanCubit>().selectDate(_selectedDate);
   }
 
-  /// Ambil 7 hari dalam minggu berjalan (Senin s/d Minggu)
-  List<DateTime> _getCurrentWeekDays() {
-    final now = DateTime.now();
-    // In Dart weekday: Monday is 1, Sunday is 7
-    final monday = now.subtract(Duration(days: now.weekday - 1));
+  void _changeMonth(int offset) {
+    final newYear = _selectedDate.year + ((_selectedDate.month + offset - 1) ~/ 12);
+    final newMonth = ((_selectedDate.month + offset - 1) % 12) + 1;
+    final maxDays = DateUtils.getDaysInMonth(newYear, newMonth);
+    final newDay = _selectedDate.day.clamp(1, maxDays);
+    _onDateSelected(DateTime(newYear, newMonth, newDay));
+  }
+
+  Future<void> _pickMonth(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+      helpText: 'PILIH BULAN & TANGGAL',
+      cancelText: 'Batal',
+      confirmText: 'Pilih',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.accentTerracotta,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: AppColors.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      _onDateSelected(picked);
+    }
+  }
+
+  /// Ambil 7 hari dalam minggu berdasarkan tanggal yang dipilih
+  List<DateTime> _getWeekDaysForDate(DateTime anchor) {
+    final monday = anchor.subtract(Duration(days: anchor.weekday - 1));
     return List.generate(7, (index) {
       final d = monday.add(Duration(days: index));
       return DateTime(d.year, d.month, d.day);
@@ -69,30 +104,9 @@ class _AgendaPageState extends State<AgendaPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: 'Agenda & Rencana 🗓️',
         subtitle: 'Sinkronisasi real-time Suami & Istri',
-        actions: [
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.accentTerracotta,
-              borderRadius: AppRadii.buttonRadius,
-              boxShadow: AppShadows.soft,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.add_task_rounded, color: Colors.white, size: 22),
-              tooltip: 'Tambah Tugas',
-              onPressed: () {
-                AddTaskBottomSheet.show(
-                  context,
-                  familyId: familyId,
-                  userId: currentUserId,
-                  initialDueDate: _selectedDate,
-                );
-              },
-            ),
-          ),
-        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -100,15 +114,11 @@ class _AgendaPageState extends State<AgendaPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Kalender Mingguan Dinamis
+              // 1. Kalender Mingguan Dinamis dengan Filter Bulan
               _buildDynamicWeeklyCalendar(context),
               const SizedBox(height: 24),
 
-              // 2. Meal Planner Section Live dari Supabase
-              _buildMealPlannerSection(context, familyId: familyId, userId: currentUserId),
-              const SizedBox(height: 28),
-
-              // 3. Header & Filter Daftar Tugas Bersama
+              // 2. Header & Filter Daftar Tugas Bersama
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -156,7 +166,7 @@ class _AgendaPageState extends State<AgendaPage> {
               ),
               const SizedBox(height: 14),
 
-              // 4. Live Stream Tasks dari Supabase (TaskCubit)
+              // 3. Live Stream Tasks dari Supabase (TaskCubit)
               BlocConsumer<TaskCubit, TaskState>(
                 listener: (context, state) {
                   if (state is TaskError) {
@@ -202,6 +212,10 @@ class _AgendaPageState extends State<AgendaPage> {
                   return _buildEmptyState(context);
                 },
               ),
+              const SizedBox(height: 28),
+
+              // 4. Menu Makan Keluarga (Meal Planner) di Bawah Daftar Tugas Bersama
+              _buildMealPlannerSection(context, familyId: familyId, userId: currentUserId),
             ],
           ),
         ),
@@ -255,9 +269,9 @@ class _AgendaPageState extends State<AgendaPage> {
     );
   }
 
-  // 1. Kalender Mingguan Dinamis
+  // 1. Kalender Mingguan Dinamis dengan Navigasi / Filter Bulan
   Widget _buildDynamicWeeklyCalendar(BuildContext context) {
-    final weekDays = _getCurrentWeekDays();
+    final weekDays = _getWeekDaysForDate(_selectedDate);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
@@ -275,27 +289,76 @@ class _AgendaPageState extends State<AgendaPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                DateFormat('MMMM yyyy', 'id_ID').format(_selectedDate),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+              // Filter / Pemilih Bulan (Klik untuk buka Date/Month Picker)
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => _pickMonth(context),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        DateFormat('MMMM yyyy', 'id_ID').format(_selectedDate),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 20,
+                        color: AppColors.accentTerracotta,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              if (_selectedDate != today)
+              const Spacer(),
+              // Tombol Navigasi Bulan (Prev / Next Month)
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left_rounded, size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      color: AppColors.textPrimary,
+                      tooltip: 'Bulan Sebelumnya',
+                      onPressed: () => _changeMonth(-1),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right_rounded, size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      color: AppColors.textPrimary,
+                      tooltip: 'Bulan Selanjutnya',
+                      onPressed: () => _changeMonth(1),
+                    ),
+                  ],
+                ),
+              ),
+              if (_selectedDate != today) ...[
+                const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () => _onDateSelected(today),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                     decoration: BoxDecoration(
                       color: AppColors.accentGreen.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Text(
-                      'Kembali ke Hari Ini',
+                      'Hari Ini',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -304,6 +367,7 @@ class _AgendaPageState extends State<AgendaPage> {
                     ),
                   ),
                 ),
+              ],
             ],
           ),
           const SizedBox(height: 12),
@@ -498,6 +562,7 @@ class _AgendaPageState extends State<AgendaPage> {
             familyId: familyId,
             userId: userId,
             initialDate: _selectedDate,
+            initialMealType: type,
           );
         },
         child: Container(
@@ -534,61 +599,117 @@ class _AgendaPageState extends State<AgendaPage> {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.accentTerracotta.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.accentTerracotta.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  type.label.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.accentTerracotta,
-                    letterSpacing: 0.5,
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () {
+        MealPlanDetailBottomSheet.show(
+          context,
+          mealPlan: meal,
+          familyId: familyId,
+          userId: userId,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.accentTerracotta.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.accentTerracotta.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          children: [
+            if (meal.imageUrl != null && meal.imageUrl!.isNotEmpty) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  meal.imageUrl!,
+                  width: 52,
+                  height: 52,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: AppColors.accentTerracotta.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.restaurant, color: AppColors.accentTerracotta, size: 24),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  meal.title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        type.label.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.accentTerracotta,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      if (meal.ingredients.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Text(
+                            '${meal.ingredients.where((i) => i.isChecked).length}/${meal.ingredients.length} bahan',
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                ),
-                if (meal.notes != null && meal.notes!.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
-                    meal.notes!,
+                    meal.title,
                     style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textMuted,
-                      fontStyle: FontStyle.italic,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (meal.notes != null && meal.notes!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      meal.notes!,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textMuted,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.textMuted),
-            tooltip: 'Hapus Menu',
-            onPressed: () {
-              context.read<MealPlanCubit>().deleteMealPlan(meal.id);
-            },
-          ),
-        ],
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textMuted,
+              size: 20,
+            ),
+          ],
+        ),
       ),
     );
   }

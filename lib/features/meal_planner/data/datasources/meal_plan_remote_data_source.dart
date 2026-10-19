@@ -8,7 +8,13 @@ abstract class MealPlanRemoteDataSource {
     required DateTime date,
   });
   Future<MealPlanModel> createMealPlan(MealPlanModel mealPlan);
+  Future<void> updateMealPlan(MealPlanModel mealPlan);
   Future<void> deleteMealPlan(String id);
+  Future<String> uploadMealPhoto({
+    required String mealId,
+    required List<int> imageBytes,
+    required String fileName,
+  });
 }
 
 class MealPlanRemoteDataSourceImpl implements MealPlanRemoteDataSource {
@@ -52,7 +58,35 @@ class MealPlanRemoteDataSourceImpl implements MealPlanRemoteDataSource {
   }
 
   @override
+  Future<void> updateMealPlan(MealPlanModel mealPlan) async {
+    final data = mealPlan.toJson();
+    await _client.from('meal_plans').update(data).eq('id', mealPlan.id);
+  }
+
+  @override
   Future<void> deleteMealPlan(String id) async {
     await _client.from('meal_plans').delete().eq('id', id);
+  }
+
+  @override
+  Future<String> uploadMealPhoto({
+    required String mealId,
+    required List<int> imageBytes,
+    required String fileName,
+  }) async {
+    final cleanFileName = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+    final path = 'meal_${mealId}_$cleanFileName';
+
+    await _client.storage.from('meals').uploadBinary(
+      path,
+      imageBytes as dynamic,
+      fileOptions: const FileOptions(
+        contentType: 'image/jpeg',
+        upsert: true,
+      ),
+    );
+
+    final publicUrl = _client.storage.from('meals').getPublicUrl(path);
+    return '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
   }
 }

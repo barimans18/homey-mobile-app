@@ -33,13 +33,44 @@ class MealPlanRepositoryImpl implements MealPlanRepository {
       title: mealPlan.title,
       notes: mealPlan.notes,
       ingredients: mealPlan.ingredients,
+      imageUrl: mealPlan.imageUrl,
       isSyncedToGrocery: mealPlan.isSyncedToGrocery,
     );
     return _remoteDataSource.createMealPlan(model);
   }
 
   @override
+  Future<void> updateMealPlan(MealPlanEntity mealPlan) {
+    final model = MealPlanModel(
+      id: mealPlan.id,
+      familyId: mealPlan.familyId,
+      createdBy: mealPlan.createdBy,
+      planDate: mealPlan.planDate,
+      mealType: mealPlan.mealType,
+      title: mealPlan.title,
+      notes: mealPlan.notes,
+      ingredients: mealPlan.ingredients,
+      imageUrl: mealPlan.imageUrl,
+      isSyncedToGrocery: mealPlan.isSyncedToGrocery,
+    );
+    return _remoteDataSource.updateMealPlan(model);
+  }
+
+  @override
   Future<void> deleteMealPlan(String id) {
     return _remoteDataSource.deleteMealPlan(id);
+  }
+
+  @override
+  Future<String> uploadMealPhoto({
+    required String mealId,
+    required List<int> imageBytes,
+    required String fileName,
+  }) {
+    return _remoteDataSource.uploadMealPhoto(
+      mealId: mealId,
+      imageBytes: imageBytes,
+      fileName: fileName,
+    );
   }
 }
