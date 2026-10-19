@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radii.dart';
@@ -10,6 +11,7 @@ import '../../../../core/presentation/widgets/primary_button.dart';
 import '../../../../core/utils/image_compress_util.dart';
 import '../../domain/entities/family_entity.dart';
 import '../cubit/family_cubit.dart';
+import '../cubit/family_state.dart';
 
 /// Modal Bottom Sheet untuk Edit Profil (Nama & Foto Profil dari Kamera/Galeri)
 class EditProfileBottomSheet extends StatefulWidget {
@@ -44,11 +46,13 @@ class _EditProfileBottomSheetState extends State<EditProfileBottomSheet> {
   CompressedImageResult? _compressedImage;
   bool _isLoading = false;
   String? _compressionInfo;
+  DateTime? _birthDate;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.profile.fullName ?? '');
+    _birthDate = widget.profile.birthDate;
   }
 
   @override
@@ -180,6 +184,35 @@ class _EditProfileBottomSheetState extends State<EditProfileBottomSheet> {
     );
   }
 
+  Future<void> _pickBirthDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _birthDate ?? DateTime(1995, 1, 1),
+      firstDate: DateTime(1940),
+      lastDate: DateTime.now(),
+      helpText: 'PILIH TANGGAL LAHIR',
+      cancelText: 'Batal',
+      confirmText: 'Pilih',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.accentTerracotta,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: AppColors.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() => _birthDate = picked);
+    }
+  }
+
   Future<void> _saveProfile() async {
     final newName = _nameController.text.trim();
     if (newName.isEmpty) {
@@ -211,12 +244,34 @@ class _EditProfileBottomSheetState extends State<EditProfileBottomSheet> {
         }
       }
 
-      // 2. Simpan update profil (nama & avatarUrl)
+      // 2. Simpan update profil (nama, avatarUrl & birthDate)
       if (!mounted) return;
-      await context.read<FamilyCubit>().updateProfile(
+      final cubit = context.read<FamilyCubit>();
+      await cubit.updateProfile(
             fullName: newName,
             avatarUrl: avatarUrl,
+            birthDate: _birthDate,
           );
+
+      // Sinkronkan juga ke tanggal keluarga jika ada (tanpa mengubah tanggal pernikahan)
+      final familyState = cubit.state;
+      if (familyState is FamilyLoaded && familyState.family != null && _birthDate != null) {
+        if (widget.profile.isHusband) {
+          await cubit.updateFamilyDates(
+            husbandBirthday: _birthDate,
+            updateHusbandBirthday: true,
+            updateWeddingDate: false,
+            updateWifeBirthday: false,
+          );
+        } else {
+          await cubit.updateFamilyDates(
+            wifeBirthday: _birthDate,
+            updateWifeBirthday: true,
+            updateWeddingDate: false,
+            updateHusbandBirthday: false,
+          );
+        }
+      }
 
       if (!mounted) return;
       Navigator.pop(context);
@@ -419,6 +474,67 @@ class _EditProfileBottomSheetState extends State<EditProfileBottomSheet> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Input Tanggal Lahir / Ulang Tahun
+                const Text(
+                  'Tanggal Lahir / Ulang Tahun',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: _pickBirthDate,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: _birthDate != null
+                            ? AppColors.accentTerracotta.withValues(alpha: 0.5)
+                            : AppColors.border,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.cake_outlined,
+                          color: AppColors.accentTerracotta,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _birthDate != null
+                                ? DateFormat('d MMMM yyyy', 'id_ID').format(_birthDate!)
+                                : 'Pilih tanggal lahir (Ulang tahun)',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: _birthDate != null ? FontWeight.w700 : FontWeight.w500,
+                              color: _birthDate != null ? AppColors.textPrimary : AppColors.textMuted,
+                            ),
+                          ),
+                        ),
+                        if (_birthDate != null)
+                          GestureDetector(
+                            onTap: () => setState(() => _birthDate = null),
+                            child: const Icon(Icons.close_rounded, size: 18, color: AppColors.textMuted),
+                          )
+                        else
+                          const Icon(
+                            Icons.calendar_today_rounded,
+                            size: 16,
+                            color: AppColors.accentTerracotta,
+                          ),
+                      ],
                     ),
                   ),
                 ),

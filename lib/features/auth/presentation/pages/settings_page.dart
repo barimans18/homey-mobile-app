@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radii.dart';
@@ -14,6 +15,8 @@ import '../cubit/family_cubit.dart';
 import '../cubit/family_state.dart';
 import '../widgets/family_pairing_dialog.dart';
 import '../widgets/edit_profile_bottom_sheet.dart';
+import '../widgets/edit_important_dates_bottom_sheet.dart';
+import '../widgets/profile_photo_view_dialog.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -193,9 +196,9 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. Kartu Profil Pengguna
+                // 1. Kartu Profil Pengguna (Simpel & Elegan)
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: AppRadii.cardRadius,
@@ -204,70 +207,57 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   child: Row(
                     children: [
+                      // Avatar (Ketuk untuk melihat foto dalam ukuran penuh)
                       GestureDetector(
                         onTap: () {
                           if (profile != null) {
-                            EditProfileBottomSheet.show(context, profile: profile);
+                            ProfilePhotoViewDialog.show(context, profile: profile);
                           }
                         },
-                        child: Stack(
-                          alignment: Alignment.bottomRight,
-                          children: [
-                            Container(
-                              width: 58,
-                              height: 58,
-                              decoration: BoxDecoration(
-                                color: isHusband
-                                    ? AppColors.accentTerracotta.withValues(alpha: 0.15)
-                                    : AppColors.accentGreen.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.accentTerracotta.withValues(alpha: 0.3),
-                                  width: 2,
-                                ),
-                              ),
-                              child: ClipOval(
-                                child: (profile?.avatarUrl != null &&
-                                        profile!.avatarUrl!.isNotEmpty)
-                                    ? Image.network(
-                                        profile.avatarUrl!,
-                                        fit: BoxFit.cover,
-                                        width: 58,
-                                        height: 58,
-                                        errorBuilder: (_, __, ___) => Center(
-                                          child: Text(
-                                            isHusband ? '👨' : '👩',
-                                            style: const TextStyle(fontSize: 28),
-                                          ),
-                                        ),
-                                      )
-                                    : Center(
-                                        child: Text(
-                                          isHusband ? '👨' : '👩',
-                                          style: const TextStyle(fontSize: 28),
-                                        ),
+                        child: Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: isHusband
+                                ? AppColors.accentTerracotta.withValues(alpha: 0.15)
+                                : AppColors.accentGreen.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isHusband
+                                  ? AppColors.accentTerracotta.withValues(alpha: 0.4)
+                                  : AppColors.accentGreen.withValues(alpha: 0.4),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: ClipOval(
+                            child: (profile?.avatarUrl != null &&
+                                    profile!.avatarUrl!.isNotEmpty)
+                                ? Image.network(
+                                    profile.avatarUrl!,
+                                    fit: BoxFit.cover,
+                                    width: 52,
+                                    height: 52,
+                                    errorBuilder: (_, __, ___) => Center(
+                                      child: Text(
+                                        isHusband ? '👨' : '👩',
+                                        style: const TextStyle(fontSize: 26),
                                       ),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: AppColors.accentTerracotta,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt_rounded,
-                                color: Colors.white,
-                                size: 11,
-                              ),
-                            ),
-                          ],
+                                    ),
+                                  )
+                                : Center(
+                                    child: Text(
+                                      isHusband ? '👨' : '👩',
+                                      style: const TextStyle(fontSize: 26),
+                                    ),
+                                  ),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               profile?.fullName ?? 'Pengguna Homey',
@@ -276,61 +266,169 @@ class _SettingsPageState extends State<SettingsPage> {
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.textPrimary,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isHusband
-                                    ? AppColors.accentTerracotta.withValues(alpha: 0.12)
-                                    : AppColors.accentGreen.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                roleLabel,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: isHusband
-                                      ? AppColors.accentTerracotta
-                                      : AppColors.accentGreen,
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isHusband
+                                        ? AppColors.accentTerracotta.withValues(alpha: 0.12)
+                                        : AppColors.accentGreen.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    roleLabel,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: isHusband
+                                          ? AppColors.accentTerracotta
+                                          : AppColors.accentGreen,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                if (family?.weddingDate != null)
+                                  Text(
+                                    '💍 ${DateFormat('d MMM yyyy', 'id_ID').format(family!.weddingDate!)}',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textMuted,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ],
                         ),
                       ),
-                      // Tombol Edit Profil (Ganti Nama & Foto)
-                      OutlinedButton.icon(
+                      const SizedBox(width: 8),
+                      // Tombol Edit Profil
+                      OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.accentTerracotta,
                           side: BorderSide(
                             color: AppColors.accentTerracotta.withValues(alpha: 0.4),
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           visualDensity: VisualDensity.compact,
-                        ),
-                        icon: const Icon(Icons.edit_outlined, size: 15),
-                        label: const Text(
-                          'Edit Profil',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                         ),
                         onPressed: () {
                           if (profile != null) {
                             EditProfileBottomSheet.show(context, profile: profile);
                           }
                         },
+                        child: const Text(
+                          'Edit Profil',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
+
+                // 2. Section Tanggal Penting (Ringkas, Rapi & Elegan)
+                if (family != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: AppRadii.cardRadius,
+                      boxShadow: AppShadows.card,
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Row(
+                              children: [
+                                Text('💍', style: TextStyle(fontSize: 14)),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Tanggal Penting',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () => EditImportantDatesBottomSheet.show(
+                                context,
+                                family: family,
+                              ),
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.edit_outlined,
+                                      size: 13,
+                                      color: AppColors.accentTerracotta,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Ubah',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.accentTerracotta,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        _buildDateLine(
+                          emoji: '💍',
+                          label: 'Hari Pernikahan',
+                          value: family.weddingDate != null
+                              ? DateFormat('d MMMM yyyy', 'id_ID').format(family.weddingDate!)
+                              : 'Belum diatur',
+                        ),
+                        const SizedBox(height: 6),
+                        _buildDateLine(
+                          emoji: '👨',
+                          label: 'Ulang Tahun Suami',
+                          value: family.husbandBirthday != null
+                              ? DateFormat('d MMMM yyyy', 'id_ID').format(family.husbandBirthday!)
+                              : 'Belum diatur',
+                        ),
+                        const SizedBox(height: 6),
+                        _buildDateLine(
+                          emoji: '👩',
+                          label: 'Ulang Tahun Istri',
+                          value: family.wifeBirthday != null
+                              ? DateFormat('d MMMM yyyy', 'id_ID').format(family.wifeBirthday!)
+                              : 'Belum diatur',
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
 
                 // 2. Section Family Pairing (TEMPAT KODE KELUARGA)
                 Text(
@@ -936,6 +1034,41 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDateLine({
+    required String emoji,
+    required String label,
+    required String value,
+  }) {
+    final isSet = value != 'Belum diatur';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 13)),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textMuted,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isSet ? FontWeight.w700 : FontWeight.w500,
+              color: isSet ? AppColors.textPrimary : AppColors.textMuted,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

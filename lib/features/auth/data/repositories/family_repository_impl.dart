@@ -67,6 +67,27 @@ class FamilyRepositoryImpl implements FamilyRepository {
   }
 
   @override
+  Future<void> updateFamilyDates({
+    required String familyId,
+    DateTime? weddingDate,
+    DateTime? husbandBirthday,
+    DateTime? wifeBirthday,
+    bool updateWeddingDate = false,
+    bool updateHusbandBirthday = false,
+    bool updateWifeBirthday = false,
+  }) {
+    return _remoteDataSource.updateFamilyDates(
+      familyId: familyId,
+      weddingDate: weddingDate,
+      husbandBirthday: husbandBirthday,
+      wifeBirthday: wifeBirthday,
+      updateWeddingDate: updateWeddingDate,
+      updateHusbandBirthday: updateHusbandBirthday,
+      updateWifeBirthday: updateWifeBirthday,
+    );
+  }
+
+  @override
   Future<List<UserProfileEntity>> getFamilyMembers(String familyId) {
     return _remoteDataSource.getFamilyMembers(familyId);
   }
@@ -82,12 +103,14 @@ class FamilyRepositoryImpl implements FamilyRepository {
     String? fullName,
     String? role,
     String? avatarUrl,
+    DateTime? birthDate,
   }) {
     return _remoteDataSource.updateProfile(
       userId: userId,
       fullName: fullName,
       role: role,
       avatarUrl: avatarUrl,
+      birthDate: birthDate,
     );
   }
 

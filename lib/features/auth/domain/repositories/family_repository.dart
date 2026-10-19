@@ -21,6 +21,15 @@ abstract class FamilyRepository {
     required String familyId,
     required String newPin,
   });
+  Future<void> updateFamilyDates({
+    required String familyId,
+    DateTime? weddingDate,
+    DateTime? husbandBirthday,
+    DateTime? wifeBirthday,
+    bool updateWeddingDate = false,
+    bool updateHusbandBirthday = false,
+    bool updateWifeBirthday = false,
+  });
   Future<List<UserProfileEntity>> getFamilyMembers(String familyId);
   Future<void> updateRole({required String userId, required String role});
   Future<void> updateProfile({
@@ -28,6 +37,7 @@ abstract class FamilyRepository {
     String? fullName,
     String? role,
     String? avatarUrl,
+    DateTime? birthDate,
   });
   Future<String> uploadAvatar({
     required String userId,
@@ -35,4 +45,3 @@ abstract class FamilyRepository {
     required String fileName,
   });
 }
-

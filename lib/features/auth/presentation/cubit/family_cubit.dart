@@ -251,10 +251,46 @@ class FamilyCubit extends Cubit<FamilyState> {
     }
   }
 
+  Future<void> updateFamilyDates({
+    DateTime? weddingDate,
+    DateTime? husbandBirthday,
+    DateTime? wifeBirthday,
+    bool updateWeddingDate = false,
+    bool updateHusbandBirthday = false,
+    bool updateWifeBirthday = false,
+  }) async {
+    final currentState = state;
+    if (currentState is! FamilyLoaded || currentState.family == null) return;
+
+    try {
+      await _familyRepository.updateFamilyDates(
+        familyId: currentState.family!.id,
+        weddingDate: weddingDate,
+        husbandBirthday: husbandBirthday,
+        wifeBirthday: wifeBirthday,
+        updateWeddingDate: updateWeddingDate,
+        updateHusbandBirthday: updateHusbandBirthday,
+        updateWifeBirthday: updateWifeBirthday,
+      );
+      await loadFamilyData();
+      final updatedState = state;
+      if (updatedState is FamilyLoaded) {
+        emit(updatedState.copyWith(
+          notificationMessage: 'Tanggal spesial keluarga berhasil disimpan! 💍✨',
+        ));
+      }
+    } catch (e) {
+      emit(currentState.copyWith(
+        notificationMessage: 'Gagal memperbarui tanggal keluarga: $e',
+      ));
+    }
+  }
+
   Future<void> updateProfile({
     String? fullName,
     String? role,
     String? avatarUrl,
+    DateTime? birthDate,
   }) async {
     try {
       final profile = await _familyRepository.getMyProfile();
@@ -264,6 +300,7 @@ class FamilyCubit extends Cubit<FamilyState> {
         fullName: fullName,
         role: role,
         avatarUrl: avatarUrl,
+        birthDate: birthDate,
       );
       // Update sesi lokal
       sl<SessionStorageService>().saveSession(

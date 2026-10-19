@@ -27,6 +27,15 @@ abstract class FamilyRemoteDataSource {
     required String familyId,
     required String newPin,
   });
+  Future<void> updateFamilyDates({
+    required String familyId,
+    DateTime? weddingDate,
+    DateTime? husbandBirthday,
+    DateTime? wifeBirthday,
+    bool updateWeddingDate = false,
+    bool updateHusbandBirthday = false,
+    bool updateWifeBirthday = false,
+  });
   Future<List<UserProfileModel>> getFamilyMembers(String familyId);
   Future<void> updateRole({required String userId, required String role});
   Future<void> updateProfile({
@@ -34,6 +43,7 @@ abstract class FamilyRemoteDataSource {
     String? fullName,
     String? role,
     String? avatarUrl,
+    DateTime? birthDate,
   });
   Future<String> uploadAvatar({
     required String userId,
@@ -276,6 +286,34 @@ class FamilyRemoteDataSourceImpl implements FamilyRemoteDataSource {
   }
 
   @override
+  Future<void> updateFamilyDates({
+    required String familyId,
+    DateTime? weddingDate,
+    DateTime? husbandBirthday,
+    DateTime? wifeBirthday,
+    bool updateWeddingDate = false,
+    bool updateHusbandBirthday = false,
+    bool updateWifeBirthday = false,
+  }) async {
+    final updateData = <String, dynamic>{};
+    if (updateWeddingDate) {
+      updateData['wedding_date'] =
+          weddingDate?.toIso8601String().substring(0, 10);
+    }
+    if (updateHusbandBirthday) {
+      updateData['husband_birthday'] =
+          husbandBirthday?.toIso8601String().substring(0, 10);
+    }
+    if (updateWifeBirthday) {
+      updateData['wife_birthday'] =
+          wifeBirthday?.toIso8601String().substring(0, 10);
+    }
+    if (updateData.isNotEmpty) {
+      await _client.from('families').update(updateData).eq('id', familyId);
+    }
+  }
+
+  @override
   Future<List<UserProfileModel>> getFamilyMembers(String familyId) async {
     final res = await _client
         .from('profiles')
@@ -301,6 +339,7 @@ class FamilyRemoteDataSourceImpl implements FamilyRemoteDataSource {
     String? fullName,
     String? role,
     String? avatarUrl,
+    DateTime? birthDate,
   }) async {
     final updateData = <String, dynamic>{};
     if (fullName != null && fullName.trim().isNotEmpty) {
@@ -311,6 +350,9 @@ class FamilyRemoteDataSourceImpl implements FamilyRemoteDataSource {
     }
     if (avatarUrl != null) {
       updateData['avatar_url'] = avatarUrl;
+    }
+    if (birthDate != null) {
+      updateData['birth_date'] = birthDate.toIso8601String().substring(0, 10);
     }
     if (updateData.isNotEmpty) {
       await _client.from('profiles').update(updateData).eq('id', userId);
