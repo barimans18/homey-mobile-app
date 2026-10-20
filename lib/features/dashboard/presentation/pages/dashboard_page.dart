@@ -12,6 +12,9 @@ import 'package:homey/features/finance/presentation/cubit/finance_state.dart';
 import '../widgets/budget_highlight_card.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/focus_tasks_section.dart';
+import '../widgets/meal_plan_carousel_section.dart';
+import 'package:homey/features/meal_planner/presentation/cubit/meal_plan_cubit.dart';
+import 'package:homey/features/meal_planner/presentation/pages/meal_planner_page.dart';
 
 /// Halaman Beranda (Dashboard) utama yang terintegrasi live dengan Supabase
 class DashboardPage extends StatelessWidget {
@@ -63,7 +66,9 @@ class DashboardPage extends StatelessWidget {
                     children: [
                       DashboardHeader(
                         greetingName: greeting,
-                        avatarUrl: state is FamilyLoaded ? state.profile.avatarUrl : null,
+                        avatarUrl: state is FamilyLoaded
+                            ? state.profile.avatarUrl
+                            : null,
                         role: state is FamilyLoaded ? state.profile.role : null,
                         onProfileTap: onNavigateToSettings,
                       ),
@@ -77,11 +82,11 @@ class DashboardPage extends StatelessWidget {
                               vertical: 12,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.accentYellow.withValues(alpha: 0.25),
-                              borderRadius: AppRadii.cardRadius,
-                              border: Border.all(
-                                color: AppColors.accentYellow,
+                              color: AppColors.accentYellow.withValues(
+                                alpha: 0.25,
                               ),
+                              borderRadius: AppRadii.cardRadius,
+                              border: Border.all(color: AppColors.accentYellow),
                             ),
                             child: const Row(
                               children: [
@@ -123,11 +128,13 @@ class DashboardPage extends StatelessWidget {
 
                     final today = DateTime.now();
                     final todayTotal = state.transactions
-                        .where((t) =>
-                            t.isExpense &&
-                            t.transactionDate.year == today.year &&
-                            t.transactionDate.month == today.month &&
-                            t.transactionDate.day == today.day)
+                        .where(
+                          (t) =>
+                              t.isExpense &&
+                              t.transactionDate.year == today.year &&
+                              t.transactionDate.month == today.month &&
+                              t.transactionDate.day == today.day,
+                        )
                         .fold(0.0, (sum, item) => sum + item.amount);
 
                     todayExpense = currencyFormatter.format(todayTotal);
@@ -143,8 +150,25 @@ class DashboardPage extends StatelessWidget {
               const SizedBox(height: 24),
 
               // 3. Highlight Agenda Hari Ini ("Fokus Hari Ini")
-              FocusTasksSection(
-                onSeeAllPressed: onNavigateToAgenda,
+              FocusTasksSection(onSeeAllPressed: onNavigateToAgenda),
+
+              // 4. Menu Makan Keluarga (Image Carousel Slider)
+              MealPlanCarouselSection(
+                onSeeAllPressed: () {
+                  final mealPlanCubit = context.read<MealPlanCubit>();
+                  final familyCubit = context.read<FamilyCubit>();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => MultiBlocProvider(
+                        providers: [
+                          BlocProvider.value(value: mealPlanCubit),
+                          BlocProvider.value(value: familyCubit),
+                        ],
+                        child: const MealPlannerPage(),
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),

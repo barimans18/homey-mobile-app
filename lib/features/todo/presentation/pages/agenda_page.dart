@@ -10,17 +10,12 @@ import '../../../../core/presentation/widgets/custom_app_bar.dart';
 import '../../../../core/services/session_storage_service.dart';
 import '../../../auth/presentation/cubit/family_cubit.dart';
 import '../../../auth/presentation/cubit/family_state.dart';
-import '../../../meal_planner/domain/entities/meal_plan_entity.dart';
-import '../../../meal_planner/presentation/cubit/meal_plan_cubit.dart';
-import '../../../meal_planner/presentation/cubit/meal_plan_state.dart';
-import '../../../meal_planner/presentation/widgets/add_meal_plan_bottom_sheet.dart';
-import '../../../meal_planner/presentation/widgets/meal_plan_detail_bottom_sheet.dart';
 import '../../domain/entities/task_entity.dart';
 import '../cubit/task_cubit.dart';
 import '../cubit/task_state.dart';
 import '../widgets/add_task_bottom_sheet.dart';
 
-/// Halaman Agenda, Kalender Mingguan, Meal Planner & Shared Tasks live Supabase
+/// Halaman Agenda, Kalender Mingguan & Shared Tasks live Supabase
 class AgendaPage extends StatefulWidget {
   const AgendaPage({super.key});
 
@@ -43,7 +38,6 @@ class _AgendaPageState extends State<AgendaPage> {
     setState(() {
       _selectedDate = DateTime(date.year, date.month, date.day);
     });
-    context.read<MealPlanCubit>().selectDate(_selectedDate);
   }
 
   void _changeMonth(int offset) {
@@ -212,10 +206,6 @@ class _AgendaPageState extends State<AgendaPage> {
                   return _buildEmptyState(context);
                 },
               ),
-              const SizedBox(height: 28),
-
-              // 4. Menu Makan Keluarga (Meal Planner) di Bawah Daftar Tugas Bersama
-              _buildMealPlannerSection(context, familyId: familyId, userId: currentUserId),
             ],
           ),
         ),
@@ -434,287 +424,7 @@ class _AgendaPageState extends State<AgendaPage> {
     );
   }
 
-  // 2. Meal Planner Section Live dari Supabase
-  Widget _buildMealPlannerSection(
-    BuildContext context, {
-    required String familyId,
-    required String userId,
-  }) {
-    final dateLabel = DateFormat('d MMMM yyyy', 'id_ID').format(_selectedDate);
-
-    return BlocBuilder<MealPlanCubit, MealPlanState>(
-      builder: (context, state) {
-        MealPlanEntity? breakfast;
-        MealPlanEntity? lunch;
-        MealPlanEntity? dinner;
-
-        if (state is MealPlanLoaded) {
-          breakfast = state.getMeal(MealType.breakfast);
-          lunch = state.getMeal(MealType.lunch);
-          dinner = state.getMeal(MealType.dinner);
-        }
-
-        return Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: AppRadii.cardRadius,
-            boxShadow: AppShadows.card,
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(7),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentYellow.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.restaurant_menu_rounded,
-                            color: AppColors.accentTerracotta, size: 18),
-                      ),
-                      const SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Menu Makan Keluarga 🍲',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          Text(
-                            dateLabel,
-                            style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.accentTerracotta),
-                    tooltip: 'Tambah Menu',
-                    onPressed: () {
-                      AddMealPlanBottomSheet.show(
-                        context,
-                        familyId: familyId,
-                        userId: userId,
-                        initialDate: _selectedDate,
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-
-              // Kartu 3 Waktu Makan (Sarapan, Siang, Malam)
-              _buildMealSlot(
-                context,
-                type: MealType.breakfast,
-                meal: breakfast,
-                familyId: familyId,
-                userId: userId,
-              ),
-              const SizedBox(height: 8),
-              _buildMealSlot(
-                context,
-                type: MealType.lunch,
-                meal: lunch,
-                familyId: familyId,
-                userId: userId,
-              ),
-              const SizedBox(height: 8),
-              _buildMealSlot(
-                context,
-                type: MealType.dinner,
-                meal: dinner,
-                familyId: familyId,
-                userId: userId,
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildMealSlot(
-    BuildContext context, {
-    required MealType type,
-    required MealPlanEntity? meal,
-    required String familyId,
-    required String userId,
-  }) {
-    if (meal == null) {
-      return InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          AddMealPlanBottomSheet.show(
-            context,
-            familyId: familyId,
-            userId: userId,
-            initialDate: _selectedDate,
-            initialMealType: type,
-          );
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border, style: BorderStyle.solid),
-          ),
-          child: Row(
-            children: [
-              Text(
-                type.label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textMuted,
-                ),
-              ),
-              const Spacer(),
-              const Icon(Icons.add_rounded, size: 16, color: AppColors.accentTerracotta),
-              const SizedBox(width: 4),
-              const Text(
-                'Tentukan Menu',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.accentTerracotta,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: () {
-        MealPlanDetailBottomSheet.show(
-          context,
-          mealPlan: meal,
-          familyId: familyId,
-          userId: userId,
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.accentTerracotta.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.accentTerracotta.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          children: [
-            if (meal.imageUrl != null && meal.imageUrl!.isNotEmpty) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  meal.imageUrl!,
-                  width: 52,
-                  height: 52,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: AppColors.accentTerracotta.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.restaurant, color: AppColors.accentTerracotta, size: 24),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-            ],
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        type.label.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.accentTerracotta,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      if (meal.ingredients.isNotEmpty) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Text(
-                            '${meal.ingredients.where((i) => i.isChecked).length}/${meal.ingredients.length} bahan',
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    meal.title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (meal.notes != null && meal.notes!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      meal.notes!,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textMuted,
-                        fontStyle: FontStyle.italic,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textMuted,
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 3. Task Card dengan Checkbox Realtime & Delete
+  // 2. Task Card dengan Checkbox Realtime & Delete
   Widget _buildTaskCard(
     BuildContext context,
     TaskEntity task, {
