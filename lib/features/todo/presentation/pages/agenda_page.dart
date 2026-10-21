@@ -104,14 +104,16 @@ class _AgendaPageState extends State<AgendaPage> {
         subtitle: 'Sinkronisasi real-time Suami & Istri',
       ),
       body: SafeArea(
-        child: ResponsiveContentContainer(
+        bottom: false,
+        child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             context.isDesktop ? 32 : 24,
             8,
             context.isDesktop ? 32 : 24,
-            context.isDesktop ? 32 : 110,
+            context.isDesktop ? 32 : 130,
           ),
-          child: SingleChildScrollView(
+          child: ResponsiveContentContainer(
+            padding: EdgeInsets.zero,
             child: ResponsiveLayout(
               // Mobile: 1 Kolom Vertikal
               mobile: Column(

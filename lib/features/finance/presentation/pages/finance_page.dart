@@ -145,14 +145,15 @@ class FinancePage extends StatelessWidget {
           final totalExpense = loadedState.totalExpense;
           final balance = loadedState.balance;
 
-          return ResponsiveContentContainer(
+          return SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
               context.isDesktop ? 32 : 24,
               8,
               context.isDesktop ? 32 : 24,
-              context.isDesktop ? 32 : 150,
+              context.isDesktop ? 32 : 130,
             ),
-            child: SingleChildScrollView(
+            child: ResponsiveContentContainer(
+              padding: EdgeInsets.zero,
               child: ResponsiveLayout(
                 // Mobile: 1 Kolom Vertikal
                 mobile: Column(

@@ -205,14 +205,16 @@ class _MealPlannerPageState extends State<MealPlannerPage> {
         ),
       ),
       body: SafeArea(
-        child: ResponsiveContentContainer(
+        bottom: false,
+        child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             context.isDesktop ? 32 : 24,
             8,
             context.isDesktop ? 32 : 24,
-            context.isDesktop ? 32 : 90,
+            context.isDesktop ? 32 : 130,
           ),
-          child: SingleChildScrollView(
+          child: ResponsiveContentContainer(
+            padding: EdgeInsets.zero,
             child: ResponsiveLayout(
               // Mobile: 1 Kolom Vertikal
               mobile: Column(

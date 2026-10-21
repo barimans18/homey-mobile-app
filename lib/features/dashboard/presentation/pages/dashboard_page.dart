@@ -43,14 +43,15 @@ class DashboardPage extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
-        child: ResponsiveContentContainer(
+        child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             context.isDesktop ? 32 : 24,
             16,
             context.isDesktop ? 32 : 24,
-            context.isDesktop ? 32 : 120,
+            context.isDesktop ? 32 : 130,
           ),
-          child: SingleChildScrollView(
+          child: ResponsiveContentContainer(
+            padding: EdgeInsets.zero,
             child: ResponsiveLayout(
               // Tampilan Mobile (1 Kolom Vertikal)
               mobile: Column(
