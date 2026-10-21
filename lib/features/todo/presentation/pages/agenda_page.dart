@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radii.dart';
 import '../../../../core/constants/app_shadows.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/presentation/responsive/responsive_layout.dart';
 import '../../../../core/presentation/widgets/custom_app_bar.dart';
 import '../../../../core/services/session_storage_service.dart';
 import '../../../auth/presentation/cubit/family_cubit.dart';
@@ -103,113 +104,164 @@ class _AgendaPageState extends State<AgendaPage> {
         subtitle: 'Sinkronisasi real-time Suami & Istri',
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 110),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Kalender Mingguan Dinamis dengan Filter Bulan
-              _buildDynamicWeeklyCalendar(context),
-              const SizedBox(height: 24),
-
-              // 2. Header & Filter Daftar Tugas Bersama
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: ResponsiveContentContainer(
+          padding: EdgeInsets.fromLTRB(
+            context.isDesktop ? 32 : 24,
+            8,
+            context.isDesktop ? 32 : 24,
+            context.isDesktop ? 32 : 110,
+          ),
+          child: SingleChildScrollView(
+            child: ResponsiveLayout(
+              // Mobile: 1 Kolom Vertikal
+              mobile: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Daftar Tugas Bersama',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w800,
-                        ),
+                  _buildDynamicWeeklyCalendar(context),
+                  const SizedBox(height: 24),
+                  _buildTaskHeader(context, familyId, currentUserId),
+                  const SizedBox(height: 8),
+                  _buildFilterChips(),
+                  const SizedBox(height: 14),
+                  _buildTaskStream(currentUserId),
+                ],
+              ),
+              // Desktop: 2 Kolom (Kalender di Kiri, Tugas di Kanan)
+              desktop: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildDynamicWeeklyCalendar(context),
+                      ],
+                    ),
                   ),
-                  TextButton.icon(
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.accentTerracotta,
-                      padding: EdgeInsets.zero,
+                  const SizedBox(width: 28),
+                  Expanded(
+                    flex: 6,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTaskHeader(context, familyId, currentUserId),
+                        const SizedBox(height: 8),
+                        _buildFilterChips(),
+                        const SizedBox(height: 14),
+                        _buildTaskStream(currentUserId),
+                      ],
                     ),
-                    icon: const Icon(Icons.add_circle_outline_rounded, size: 16),
-                    label: const Text(
-                      'Tugas Baru',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                    ),
-                    onPressed: () {
-                      AddTaskBottomSheet.show(
-                        context,
-                        familyId: familyId,
-                        userId: currentUserId,
-                        initialDueDate: _selectedDate,
-                      );
-                    },
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-
-              // Filter Chips
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildFilterChip('Semua', 'all'),
-                    _buildFilterChip('Hari Terpilih', 'selected_day'),
-                    _buildFilterChip('Suami 👨', 'suami'),
-                    _buildFilterChip('Istri 👩', 'istri'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // 3. Live Stream Tasks dari Supabase (TaskCubit)
-              BlocConsumer<TaskCubit, TaskState>(
-                listener: (context, state) {
-                  if (state is TaskError) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(state.message),
-                        backgroundColor: AppColors.error,
-                      ),
-                    );
-                  }
-                },
-                builder: (context, state) {
-                  if (state is TaskLoading) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 32),
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentTerracotta),
-                        ),
-                      ),
-                    );
-                  }
-
-                  if (state is TaskLoaded) {
-                    final filteredTasks = _filterTasks(state.tasks);
-
-                    if (filteredTasks.isEmpty) {
-                      return _buildEmptyState(context);
-                    }
-
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: filteredTasks.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final task = filteredTasks[index];
-                        return _buildTaskCard(context, task, currentUserId: currentUserId);
-                      },
-                    );
-                  }
-
-                  return _buildEmptyState(context);
-                },
-              ),
-            ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTaskHeader(
+    BuildContext context,
+    String familyId,
+    String currentUserId,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Daftar Tugas Bersama',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+        MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: TextButton.icon(
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.accentTerracotta,
+              padding: EdgeInsets.zero,
+            ),
+            icon: const Icon(Icons.add_circle_outline_rounded, size: 16),
+            label: const Text(
+              'Tugas Baru',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            ),
+            onPressed: () {
+              AddTaskBottomSheet.show(
+                context,
+                familyId: familyId,
+                userId: currentUserId,
+                initialDueDate: _selectedDate,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterChips() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildFilterChip('Semua', 'all'),
+          _buildFilterChip('Hari Terpilih', 'selected_day'),
+          _buildFilterChip('Suami 👨', 'suami'),
+          _buildFilterChip('Istri 👩', 'istri'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTaskStream(String currentUserId) {
+    return BlocConsumer<TaskCubit, TaskState>(
+      listener: (context, state) {
+        if (state is TaskError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        if (state is TaskLoading) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentTerracotta),
+              ),
+            ),
+          );
+        }
+
+        if (state is TaskLoaded) {
+          final filteredTasks = _filterTasks(state.tasks);
+
+          if (filteredTasks.isEmpty) {
+            return _buildEmptyState(context);
+          }
+
+          return ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: filteredTasks.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final task = filteredTasks[index];
+              return _buildTaskCard(context, task, currentUserId: currentUserId);
+            },
+          );
+        }
+
+        return _buildEmptyState(context);
+      },
     );
   }
 

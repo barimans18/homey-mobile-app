@@ -8,8 +8,13 @@ import 'core/di/injection_container.dart' as di;
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 
+import 'package:flutter_web_plugins/url_strategy.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Aktifkan path URL strategy untuk web (menghilangkan # dari URL browser)
+  usePathUrlStrategy();
 
   // Inisialisasi locale formatting untuk Bahasa Indonesia (id_ID)
   await initializeDateFormatting('id_ID', null);

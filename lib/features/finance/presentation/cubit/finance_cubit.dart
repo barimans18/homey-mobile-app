@@ -21,9 +21,14 @@ class FinanceCubit extends Cubit<FinanceState> {
         final currentFilter = (state is FinanceLoaded)
             ? (state as FinanceLoaded).activeFilter
             : 'all';
+        final currentMonth = (state is FinanceLoaded)
+            ? (state as FinanceLoaded).selectedMonth
+            : DateTime(DateTime.now().year, DateTime.now().month);
+
         emit(FinanceLoaded(
           transactions: transactions,
           activeFilter: currentFilter,
+          selectedMonth: currentMonth,
         ));
       },
       onError: (error) {
@@ -32,10 +37,38 @@ class FinanceCubit extends Cubit<FinanceState> {
     );
   }
 
+  /// Ubah filter tipe transaksi ('all', 'expense', 'income')
   void setFilter(String filter) {
     if (state is FinanceLoaded) {
       emit((state as FinanceLoaded).copyWith(activeFilter: filter));
     }
+  }
+
+  /// Pilih bulan tertentu untuk filter buku kas
+  void setMonth(DateTime month) {
+    if (state is FinanceLoaded) {
+      emit((state as FinanceLoaded).copyWith(
+        selectedMonth: DateTime(month.year, month.month),
+      ));
+    }
+  }
+
+  /// Navigasi ke bulan sebelumnya (-1) atau selanjutnya (+1)
+  void changeMonth(int offset) {
+    if (state is FinanceLoaded) {
+      final current = (state as FinanceLoaded).selectedMonth;
+      final newYear = current.year + ((current.month + offset - 1) ~/ 12);
+      final newMonth = ((current.month + offset - 1) % 12) + 1;
+      emit((state as FinanceLoaded).copyWith(
+        selectedMonth: DateTime(newYear, newMonth),
+      ));
+    }
+  }
+
+  /// Reset filter ke bulan saat ini
+  void resetToCurrentMonth() {
+    final now = DateTime.now();
+    setMonth(DateTime(now.year, now.month));
   }
 
   Future<void> addTransaction(TransactionEntity transaction) async {

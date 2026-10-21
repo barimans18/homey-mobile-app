@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radii.dart';
+import '../../../../core/presentation/responsive/adaptive_dialog.dart';
 import '../../../../core/presentation/widgets/primary_button.dart';
 import '../../domain/entities/task_entity.dart';
 import '../cubit/task_cubit.dart';
@@ -28,10 +29,9 @@ class AddTaskBottomSheet extends StatefulWidget {
     required DateTime initialDueDate,
   }) {
     final taskCubit = context.read<TaskCubit>();
-    return showModalBottomSheet(
+    return AdaptiveModal.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      maxWidth: 540,
       builder: (_) => BlocProvider.value(
         value: taskCubit,
         child: AddTaskBottomSheet(

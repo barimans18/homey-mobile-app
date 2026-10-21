@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radii.dart';
 import '../../../../core/constants/app_shadows.dart';
+import '../../../../core/presentation/responsive/responsive_layout.dart';
 import '../../../../core/presentation/widgets/custom_app_bar.dart';
 import '../../../../core/presentation/widgets/primary_button.dart';
 import '../../../../core/di/injection_container.dart';
@@ -145,8 +146,10 @@ class _LoginPageState extends State<LoginPage> {
           subtitle: 'Ruang kolaborasi hangat untuk berdua',
         ),
         body: SafeArea(
-          child: SingleChildScrollView(
+          child: ResponsiveContentContainer(
+            maxWidth: 680,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -522,27 +525,38 @@ class _LoginPageState extends State<LoginPage> {
                 // Accordion Opsional: Login dengan Email/Password
                 const SizedBox(height: 12),
                 Center(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _showEmailLogin = !_showEmailLogin),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _showEmailLogin
-                              ? 'Tutup Opsi Akun Email'
-                              : 'Opsi Lanjutan: Masuk dengan Email & Password (Opsional)',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textMuted,
-                          ),
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _showEmailLogin = !_showEmailLogin),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                _showEmailLogin
+                                    ? 'Tutup Opsi Akun Email'
+                                    : 'Masuk dengan Email & Password (Opsional)',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              _showEmailLogin ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                              size: 16,
+                              color: AppColors.textMuted,
+                            ),
+                          ],
                         ),
-                        Icon(
-                          _showEmailLogin ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                          size: 16,
-                          color: AppColors.textMuted,
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -595,6 +609,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

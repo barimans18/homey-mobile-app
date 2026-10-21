@@ -19,51 +19,73 @@ class FinanceLoading extends FinanceState {
 class FinanceLoaded extends FinanceState {
   final List<TransactionEntity> transactions;
   final String activeFilter; // 'all', 'expense', 'income'
+  final DateTime selectedMonth;
 
-  const FinanceLoaded({
+  FinanceLoaded({
     required this.transactions,
     this.activeFilter = 'all',
-  });
+    DateTime? selectedMonth,
+  }) : selectedMonth = selectedMonth ??
+            DateTime(DateTime.now().year, DateTime.now().month);
 
-  double get totalIncome => transactions
+  /// Daftar transaksi yang terjadi pada bulan yang dipilih
+  List<TransactionEntity> get monthTransactions => transactions.where((t) {
+        return t.transactionDate.year == selectedMonth.year &&
+            t.transactionDate.month == selectedMonth.month;
+      }).toList();
+
+  /// Total pemasukan pada bulan yang dipilih
+  double get totalIncome => monthTransactions
       .where((t) => t.isIncome)
       .fold(0.0, (sum, item) => sum + item.amount);
 
-  double get totalExpense => transactions
+  /// Total pengeluaran pada bulan yang dipilih
+  double get totalExpense => monthTransactions
       .where((t) => t.isExpense)
       .fold(0.0, (sum, item) => sum + item.amount);
 
+  /// Sisa saldo kas pada bulan yang dipilih
   double get balance => totalIncome - totalExpense;
 
+  /// Total pengeluaran per kategori pada bulan yang dipilih
   Map<String, double> get expensesByCategory {
     final Map<String, double> result = {};
-    for (final t in transactions.where((t) => t.isExpense)) {
+    for (final t in monthTransactions.where((t) => t.isExpense)) {
       result[t.category] = (result[t.category] ?? 0.0) + t.amount;
     }
     return result;
   }
 
+  /// Transaksi terfilter sesuai kategori dan bulan yang dipilih
   List<TransactionEntity> get filteredTransactions {
     if (activeFilter == 'expense') {
-      return transactions.where((t) => t.isExpense).toList();
+      return monthTransactions.where((t) => t.isExpense).toList();
     } else if (activeFilter == 'income') {
-      return transactions.where((t) => t.isIncome).toList();
+      return monthTransactions.where((t) => t.isIncome).toList();
     }
-    return transactions;
+    return monthTransactions;
+  }
+
+  /// Menandakan apakah bulan yang dipilih adalah bulan sekarang
+  bool get isCurrentMonth {
+    final now = DateTime.now();
+    return selectedMonth.year == now.year && selectedMonth.month == now.month;
   }
 
   FinanceLoaded copyWith({
     List<TransactionEntity>? transactions,
     String? activeFilter,
+    DateTime? selectedMonth,
   }) {
     return FinanceLoaded(
       transactions: transactions ?? this.transactions,
       activeFilter: activeFilter ?? this.activeFilter,
+      selectedMonth: selectedMonth ?? this.selectedMonth,
     );
   }
 
   @override
-  List<Object?> get props => [transactions, activeFilter];
+  List<Object?> get props => [transactions, activeFilter, selectedMonth];
 }
 
 class FinanceError extends FinanceState {

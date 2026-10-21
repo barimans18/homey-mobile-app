@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radii.dart';
+import '../../../../core/presentation/responsive/adaptive_dialog.dart';
 import '../../../../core/presentation/widgets/primary_button.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../cubit/finance_cubit.dart';
@@ -24,10 +25,9 @@ class AddTransactionBottomSheet extends StatefulWidget {
     required String userId,
   }) {
     final financeCubit = context.read<FinanceCubit>();
-    return showModalBottomSheet(
+    return AdaptiveModal.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      maxWidth: 540,
       builder: (_) => BlocProvider.value(
         value: financeCubit,
         child: AddTransactionBottomSheet(

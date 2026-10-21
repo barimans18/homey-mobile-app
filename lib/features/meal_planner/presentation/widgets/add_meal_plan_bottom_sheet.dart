@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radii.dart';
+import '../../../../core/presentation/responsive/adaptive_dialog.dart';
 import '../../../../core/presentation/widgets/primary_button.dart';
 import '../../../../core/utils/image_compress_util.dart';
 import '../../domain/entities/meal_plan_entity.dart';
@@ -37,10 +38,9 @@ class AddMealPlanBottomSheet extends StatefulWidget {
     MealType? initialMealType,
   }) {
     final cubit = context.read<MealPlanCubit>();
-    return showModalBottomSheet(
+    return AdaptiveModal.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      maxWidth: 560,
       builder: (_) => BlocProvider.value(
         value: cubit,
         child: AddMealPlanBottomSheet(
@@ -67,7 +67,7 @@ class _AddMealPlanBottomSheetState extends State<AddMealPlanBottomSheet> {
   late DateTime _selectedDate;
   final List<MealIngredient> _ingredients = [];
 
-  File? _selectedImageFile;
+  Uint8List? _selectedImageBytes;
   String? _existingImageUrl;
   String? _compressedSizeLabel;
   bool _isLoading = false;
@@ -128,21 +128,17 @@ class _AddMealPlanBottomSheetState extends State<AddMealPlanBottomSheet> {
       final picked = await _picker.pickImage(source: source);
       if (picked == null) return;
 
-      final rawFile = File(picked.path);
-      // Kompresi foto dengan ImageCompressUtil
-      final compressedResult = await ImageCompressUtil.compressImageFile(
-        rawFile,
+      final rawBytes = await picked.readAsBytes();
+      // Kompresi foto dengan ImageCompressUtil (bytes)
+      final compressedResult = await ImageCompressUtil.compressImageBytes(
+        rawBytes,
+        fileName: picked.name,
         maxDimension: 1200,
         quality: 85,
       );
 
-      // Simpan file sementara hasil kompresi
-      final tempDir = Directory.systemTemp;
-      final tempFile = File('${tempDir.path}/compressed_meal_${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await tempFile.writeAsBytes(compressedResult.bytes);
-
       setState(() {
-        _selectedImageFile = tempFile;
+        _selectedImageBytes = compressedResult.bytes;
         _compressedSizeLabel = compressedResult.compressedSizeFormatted;
       });
     } catch (e) {
@@ -228,12 +224,11 @@ class _AddMealPlanBottomSheetState extends State<AddMealPlanBottomSheet> {
       String? finalImageUrl = _existingImageUrl;
 
       // Upload foto jika pengguna memilih foto baru
-      if (_selectedImageFile != null) {
-        final imageBytes = await _selectedImageFile!.readAsBytes();
+      if (_selectedImageBytes != null) {
         final fileName = 'meal_${DateTime.now().millisecondsSinceEpoch}.jpg';
         final uploadedUrl = await cubit.uploadMealPhoto(
               mealId: mealId,
-              imageBytes: imageBytes,
+              imageBytes: _selectedImageBytes!,
               fileName: fileName,
             );
         finalImageUrl = uploadedUrl;
@@ -354,14 +349,14 @@ class _AddMealPlanBottomSheetState extends State<AddMealPlanBottomSheet> {
                   ),
                   const SizedBox(height: 8),
 
-                  if (_selectedImageFile != null) ...[
+                  if (_selectedImageBytes != null) ...[
                     Stack(
                       alignment: Alignment.topRight,
                       children: [
                         ClipRRect(
                           borderRadius: AppRadii.cardRadius,
-                          child: Image.file(
-                            _selectedImageFile!,
+                          child: Image.memory(
+                            _selectedImageBytes!,
                             width: double.infinity,
                             height: 160,
                             fit: BoxFit.cover,
@@ -378,7 +373,7 @@ class _AddMealPlanBottomSheetState extends State<AddMealPlanBottomSheet> {
                               icon: const Icon(Icons.close_rounded, size: 18, color: Colors.white),
                               onPressed: () {
                                 setState(() {
-                                  _selectedImageFile = null;
+                                  _selectedImageBytes = null;
                                   _compressedSizeLabel = null;
                                 });
                               },

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radii.dart';
 
-/// Modal Bottom Sheet "Mau tambah apa nih?" saat FAB tengah ditekan
+import '../../../../core/presentation/responsive/adaptive_dialog.dart';
+
+/// Modal Bottom Sheet / Dialog "Mau tambah apa nih?" saat FAB / Tambah ditekan
 class AddActionBottomSheet extends StatelessWidget {
   final VoidCallback? onAddFinance;
   final VoidCallback? onAddTask;
@@ -21,14 +23,10 @@ class AddActionBottomSheet extends StatelessWidget {
     VoidCallback? onAddTask,
     VoidCallback? onAddMeal,
   }) {
-    return showModalBottomSheet(
+    return AdaptiveModal.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadii.bottomSheetRadius,
-      ),
-      builder: (context) => AddActionBottomSheet(
+      maxWidth: 480,
+      builder: (dialogCtx) => AddActionBottomSheet(
         onAddFinance: onAddFinance,
         onAddTask: onAddTask,
         onAddMeal: onAddMeal,

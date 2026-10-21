@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_radii.dart';
 import '../../../../core/constants/app_shadows.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/presentation/responsive/responsive_layout.dart';
 import '../../../../core/presentation/widgets/custom_app_bar.dart';
 import '../../../../core/services/session_storage_service.dart';
 import '../../../auth/presentation/cubit/family_cubit.dart';
@@ -204,136 +205,176 @@ class _MealPlannerPageState extends State<MealPlannerPage> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 90),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Kalender Mingguan Dinamis dengan Filter Bulan (Seperti Agenda)
-              _buildDynamicWeeklyCalendar(context),
-              const SizedBox(height: 20),
-
-              // 2. Judul Tanggal Terpilih & Counter Menu
-              BlocBuilder<MealPlanCubit, MealPlanState>(
-                builder: (context, state) {
-                  int totalMealsCount = 0;
-                  if (state is MealPlanLoaded) {
-                    totalMealsCount = state.todayMeals.length;
-                  }
-
-                  final dateStr = DateFormat(
-                    'EEEE, d MMMM yyyy',
-                    'id_ID',
-                  ).format(_selectedDate);
-
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            dateStr,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          const Text(
-                            'Jadwal Hidangan Pasutri',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentTerracotta.withValues(
-                            alpha: 0.1,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '$totalMealsCount Menu',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.accentTerracotta,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
+        child: ResponsiveContentContainer(
+          padding: EdgeInsets.fromLTRB(
+            context.isDesktop ? 32 : 24,
+            8,
+            context.isDesktop ? 32 : 24,
+            context.isDesktop ? 32 : 90,
+          ),
+          child: SingleChildScrollView(
+            child: ResponsiveLayout(
+              // Mobile: 1 Kolom Vertikal
+              mobile: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDynamicWeeklyCalendar(context),
+                  const SizedBox(height: 20),
+                  _buildDateHeader(),
+                  const SizedBox(height: 16),
+                  _buildMealSlots(familyId, currentUserId),
+                ],
               ),
-              const SizedBox(height: 16),
-
-              // 3. Tiga Slot Waktu Makan Utama (Sarapan, Makan Siang, Makan Malam)
-              BlocBuilder<MealPlanCubit, MealPlanState>(
-                builder: (context, state) {
-                  if (state is MealPlanLoading) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 40),
-                        child: CircularProgressIndicator(
-                          color: AppColors.accentTerracotta,
-                          strokeWidth: 2.5,
-                        ),
-                      ),
-                    );
-                  }
-
-                  MealPlanEntity? breakfast;
-                  MealPlanEntity? lunch;
-                  MealPlanEntity? dinner;
-
-                  if (state is MealPlanLoaded) {
-                    breakfast = state.getMeal(MealType.breakfast);
-                    lunch = state.getMeal(MealType.lunch);
-                    dinner = state.getMeal(MealType.dinner);
-                  }
-
-                  return Column(
-                    children: [
-                      _buildMealSlotCard(
-                        context,
-                        type: MealType.breakfast,
-                        meal: breakfast,
-                        familyId: familyId,
-                        userId: currentUserId,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildMealSlotCard(
-                        context,
-                        type: MealType.lunch,
-                        meal: lunch,
-                        familyId: familyId,
-                        userId: currentUserId,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildMealSlotCard(
-                        context,
-                        type: MealType.dinner,
-                        meal: dinner,
-                        familyId: familyId,
-                        userId: currentUserId,
-                      ),
-                    ],
-                  );
-                },
+              // Desktop: 2 Kolom
+              desktop: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildDynamicWeeklyCalendar(context),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 28),
+                  Expanded(
+                    flex: 6,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildDateHeader(),
+                        const SizedBox(height: 16),
+                        _buildMealSlots(familyId, currentUserId),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDateHeader() {
+    return BlocBuilder<MealPlanCubit, MealPlanState>(
+      builder: (context, state) {
+        int totalMealsCount = 0;
+        if (state is MealPlanLoaded) {
+          totalMealsCount = state.todayMeals.length;
+        }
+
+        final dateStr = DateFormat(
+          'EEEE, d MMMM yyyy',
+          'id_ID',
+        ).format(_selectedDate);
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  dateStr,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Jadwal Hidangan Pasutri',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 5,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.accentTerracotta.withValues(
+                  alpha: 0.1,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$totalMealsCount Menu',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.accentTerracotta,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildMealSlots(String familyId, String currentUserId) {
+    return BlocBuilder<MealPlanCubit, MealPlanState>(
+      builder: (context, state) {
+        if (state is MealPlanLoading) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: CircularProgressIndicator(
+                color: AppColors.accentTerracotta,
+                strokeWidth: 2.5,
+              ),
+            ),
+          );
+        }
+
+        MealPlanEntity? breakfast;
+        MealPlanEntity? lunch;
+        MealPlanEntity? dinner;
+
+        if (state is MealPlanLoaded) {
+          breakfast = state.getMeal(MealType.breakfast);
+          lunch = state.getMeal(MealType.lunch);
+          dinner = state.getMeal(MealType.dinner);
+        }
+
+        return Column(
+          children: [
+            _buildMealSlotCard(
+              context,
+              type: MealType.breakfast,
+              meal: breakfast,
+              familyId: familyId,
+              userId: currentUserId,
+            ),
+            const SizedBox(height: 16),
+            _buildMealSlotCard(
+              context,
+              type: MealType.lunch,
+              meal: lunch,
+              familyId: familyId,
+              userId: currentUserId,
+            ),
+            const SizedBox(height: 16),
+            _buildMealSlotCard(
+              context,
+              type: MealType.dinner,
+              meal: dinner,
+              familyId: familyId,
+              userId: currentUserId,
+            ),
+          ],
+        );
+      },
     );
   }
 
