@@ -47,3 +47,10 @@ app.*.map.json
 # FVM
 .fvm/flutter_sdk
 
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# Agents & IDE MCP Configs
+.agents/mcp_config.json

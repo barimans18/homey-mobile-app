@@ -8,10 +8,19 @@ import 'core/di/injection_container.dart' as di;
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inisialisasi Environment Variables (.env)
+  try {
+    await dotenv.load(fileName: ".env");
+    developer.log('Environment variables loaded successfully', name: 'HomeyApp');
+  } catch (e) {
+    developer.log('Notice: .env file not loaded, falling back to environment config: $e', name: 'HomeyApp');
+  }
 
   // Aktifkan path URL strategy untuk web (menghilangkan # dari URL browser)
   usePathUrlStrategy();
